@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { Code2, MessageSquare, FolderKanban, BookOpen, Sparkles, UploadCloud } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -16,27 +16,61 @@ const QUICK_ACTIONS = [
 ];
 
 export default function Dashboard() {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const [stats, setStats] = useState(null);
   const [resume, setResume] = useState(null);
-  const [hasResume, setHasResume] = useState(true);
+  const [hasResume, setHasResume] = useState(false);
 
   useEffect(() => {
     client.get("/interviews/stats/summary").then(({ data }) => setStats(data));
     client
       .get("/resume/me")
-      .then(({ data }) => setResume(data))
-      .catch(() => setHasResume(false));
+      .then(({ data }) => {
+        setResume(data);
+        setHasResume(true);
+      })
+      .catch(() => {
+        setResume(null);
+        setHasResume(false);
+      });
   }, []);
 
-  const firstName = profile?.name?.split(" ")[0] || "there";
+  const firstName = profile?.name?.split(" ")[0] || "";
+
+  const greeting = (() => {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 12) return "Good Morning";
+    if (hour >= 12 && hour < 17) return "Good Afternoon";
+    if (hour >= 17 || hour < 4) return "Good Evening";
+
+    return "Good Night";
+  })();
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <p className="text-muted">Loading...</p>
+      </div>
+    );
+  }
+
+  if (profile && !profile.profileComplete) {
+    return <Navigate to="/profile-setup" replace />;
+  }
   const chartData = (stats?.weeklyProgress || []).map((w) => ({ name: w.week.split("-W")[1] ? `W${w.week.split("-W")[1]}` : w.week, score: w.avgScore }));
 
   return (
     <div className="space-y-10">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl font-semibold">Welcome back, {firstName} 👋</h1>
-        <p className="text-muted mt-1">Ready for today's interview?</p>
+        <h1 className="font-display text-2xl sm:text-3xl font-semibold">
+          {greeting}
+          {firstName ? `, ${firstName}` : ""} 👋
+        </h1>
+
+        <p className="text-muted mt-1">
+          Ready for today's interview?
+        </p>
       </div>
 
       {!hasResume && (
@@ -60,7 +94,7 @@ export default function Dashboard() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {QUICK_ACTIONS.map(({ type, label, icon: Icon, tone }) => (
             <Link key={type} to={`/interview/new?type=${type}`}>
-              <GlassCard className="p-5 h-full hover:bg-white/[0.06] transition-colors">
+              <GlassCard className="p-5 h-full hover:bg-white/6 transition-colors">
                 <span className={`grid place-items-center w-10 h-10 rounded-lg bg-linear-to-br ${tone} mb-3`}>
                   <Icon size={18} className="text-white" />
                 </span>
