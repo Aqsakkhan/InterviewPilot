@@ -68,19 +68,32 @@ export default function Navbar({ onboarding = false }) {
               {profile?.photoURL ? (
                 <img
                   src={profile.photoURL}
-                  alt=""
-                  className="w-8 h-8 rounded-full border border-line"
+                  alt={profile?.name || "Profile"}
+                  className="w-8 h-8 rounded-full border border-line object-cover"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+
+                    const fallback =
+                      e.currentTarget.parentElement?.querySelector(".avatar-fallback");
+
+                    if (fallback) {
+                      fallback.style.display = "grid";
+                    }
+                  }}
                 />
-              ) : (
-                <span className="w-8 h-8 rounded-full bg-surface-2 grid place-items-center text-xs font-semibold">
-                  {(
-                    profile?.name ||
-                    profile?.email ||
-                    firebaseUser?.email ||
-                    "?"
-                  )[0]?.toUpperCase()}
-                </span>
-              )}
+              ) : null}
+
+              <span
+                className="avatar-fallback w-8 h-8 rounded-full bg-surface-2 grid place-items-center text-xs font-semibold"
+                style={{ display: profile?.photoURL ? "none" : "grid" }}
+              >
+                {(
+                  profile?.name ||
+                  profile?.email ||
+                  firebaseUser?.email ||
+                  "?"
+                )[0]?.toUpperCase()}
+              </span>
             </>
           )}
 
