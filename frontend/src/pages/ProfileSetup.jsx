@@ -20,7 +20,7 @@ export default function ProfileSetup() {
     setError("");
 
     try {
-      await client.put("/users/me", {
+      await client.post("/users/profile", {
         name: name.trim(),
       });
 
@@ -72,7 +72,7 @@ export default function ProfileSetup() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="focus-ring w-full bg-white/5 border border-line rounded-xl px-4 py-3 text-ink placeholder:text-muted/60"
-              placeholder="Aqsa Khan"
+              placeholder="Username"
             />
           </div>
 

@@ -8,7 +8,8 @@ const client = axios.create({
 client.interceptors.request.use(async (config) => {
   const user = auth.currentUser;
   if (user) {
-    const token = await user.getIdToken();
+    const token = await user.getIdToken(true);
+    config.headers = config.headers || {};
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;

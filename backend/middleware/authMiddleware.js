@@ -1,15 +1,10 @@
 const { initFirebaseAdmin } = require("../config/firebaseAdmin");
 const User = require("../models/User");
 
-/**
- * Verifies the Firebase ID token in the Authorization header.
- * On success attaches:
- *   req.firebaseUser  -> { uid, email, name, picture }  (decoded token)
- *   req.userDoc       -> the matching Mongo User document, if one already exists
- */
 async function requireAuth(req, res, next) {
   try {
     const authHeader = req.headers.authorization || "";
+
     const token = authHeader.startsWith("Bearer ")
       ? authHeader.slice(7).trim()
       : null;
@@ -17,24 +12,29 @@ async function requireAuth(req, res, next) {
     if (!token) {
       return res.status(401).json({
         success: false,
+        code: "AUTH_TOKEN_MISSING",
         message: "Missing Authorization bearer token.",
       });
     }
 
     const fbAdmin = initFirebaseAdmin();
+
     if (!fbAdmin) {
       return res.status(503).json({
         success: false,
+        code: "FIREBASE_ADMIN_NOT_CONFIGURED",
         message: "Firebase Admin is not configured on the server.",
       });
     }
 
-    const decoded = await fbAdmin.auth().verifyIdToken(token);
+    const decoded = await fbAdmin.auth().verifyIdToken(token, true);
 
     if (!decoded?.uid) {
-      return res
-        .status(401)
-        .json({ success: false, message: "Invalid Firebase token." });
+      return res.status(401).json({
+        success: false,
+        code: "AUTH_TOKEN_INVALID",
+        message: "Firebase token is invalid.",
+      });
     }
 
     req.firebaseUser = {
@@ -44,31 +44,38 @@ async function requireAuth(req, res, next) {
       picture: decoded.picture || "",
     };
 
-    req.userDoc = await User.findOne({ firebaseUid: decoded.uid });
+    req.userDoc = await User.findOne({
+      firebaseUid: decoded.uid,
+    });
 
     return next();
   } catch (err) {
-    console.error("Auth verification failed:", err?.message || err);
+    const code = err?.code || "AUTH_TOKEN_VERIFICATION_FAILED";
+
+    console.error("Auth verification failed:", code, err?.message || err);
+
     return res.status(401).json({
       success: false,
-      message: "Invalid or expired session. Please sign in again.",
+      code,
+      message:
+        "We could not verify your Firebase session. Please refresh or sign in again.",
     });
   }
 }
 
-/**
- * Use after requireAuth on routes that need a completed profile
- * (resume upload, interviews, dashboard, etc).
- */
 function requireProfile(req, res, next) {
   if (!req.userDoc || !req.userDoc.profileComplete) {
-    return res.status(404).json({
+    return res.status(403).json({
       success: false,
-      message:
-        "No profile found for this account yet. Please complete profile setup first.",
+      code: "PROFILE_REQUIRED",
+      message: "Please complete profile setup before accessing this resource.",
     });
   }
+
   return next();
 }
 
-module.exports = { requireAuth, requireProfile };
+module.exports = {
+  requireAuth,
+  requireProfile,
+};
