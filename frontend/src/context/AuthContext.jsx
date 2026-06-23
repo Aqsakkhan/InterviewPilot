@@ -1,9 +1,26 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { onAuthStateChanged, signInWithPopup, signOut as fbSignOut } from "firebase/auth";
-import { auth, googleProvider } from "../firebase";
+import { createContext, useContext, useEffect, useMemo, useState, useCallback } from "react";
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut as fbSignOut,
+} from "firebase/auth";
+import { auth, githubProvider, googleProvider } from "../firebase";
 import client from "../api/client";
 
 const AuthContext = createContext(null);
+
+function friendlyAuthError(err, fallback = "Authentication failed. Please try again.") {
+  const code = err?.code || "";
+  if (code.includes("invalid-credential") || code.includes("wrong-password") || code.includes("user-not-found")) {
+    return "Invalid email or password.";
+  }
+  if (code.includes("popup-closed-by-user")) return "Sign-in popup was closed before completion.";
+  if (code.includes("account-exists-with-different-credential")) {
+    return "An account already exists with this email using another login method.";
+  }
+  return err?.response?.data?.message || fallback;
+}
 
 export function AuthProvider({ children }) {
   const [firebaseUser, setFirebaseUser] = useState(null);
@@ -11,61 +28,109 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState("");
 
-  const refreshProfile = useCallback(async () => {
+  const [token, setToken] = useState("");
+
+  const syncProfile = useCallback(async () => {
     try {
       const { data } = await client.post("/users/sync");
-      setProfile(data);
-      return data;
+      const syncedUser = data?.user || null;
+      setProfile(syncedUser);
+      return syncedUser;
     } catch (err) {
       console.error("Failed to sync profile:", err);
       setProfile(null);
+      setAuthError(friendlyAuthError(err, "Could not verify your profile. Please try again."));
       return null;
     }
   }, []);
 
+  const refreshProfile = useCallback(async () => syncProfile(), [syncProfile]);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (user) => {
+      setLoading(true);
+      setAuthError("");
       setFirebaseUser(user);
       if (user) {
-        await refreshProfile();
+        try {
+          setToken(await user.getIdToken());
+          await syncProfile();
+        } catch (err) {
+          console.error("Auth state sync failed:", err);
+          setAuthError(friendlyAuthError(err, "Could not restore your session."));
+          setProfile(null);
+        }
       } else {
+        setToken("");
         setProfile(null);
       }
       setLoading(false);
     });
     return unsub;
-  }, [refreshProfile]);
+  }, [syncProfile]);
 
-  const signInWithGoogle = async () => {
+  const loginWithEmail = async (email, password) => {
     setAuthError("");
+    setLoading(true);
     try {
-      await signInWithPopup(auth, googleProvider);
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      setFirebaseUser(result.user);
+      setToken(await result.user.getIdToken());
+      return await syncProfile();
     } catch (err) {
       console.error(err);
-      setAuthError("Google sign-in failed. Please try again.");
+      const message = friendlyAuthError(err, "Email login failed. Please try again.");
+      setAuthError(message);
+      throw new Error(message);
+    } finally {
+      setLoading(false);
     }
   };
 
+  const loginWithProvider = async (provider, label) => {
+    setAuthError("");
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, provider);
+      setFirebaseUser(result.user);
+      setToken(await result.user.getIdToken());
+      return await syncProfile();
+    } catch (err) {
+      console.error(err);
+      const message = friendlyAuthError(err, `${label} sign-in failed. Please try again.`);
+      setAuthError(message);
+      throw new Error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const signInWithGoogle = () => loginWithProvider(googleProvider, "Google");
+  const signInWithGithub = () => loginWithProvider(githubProvider, "GitHub");
   const signOutUser = async () => {
     await fbSignOut(auth);
+    setFirebaseUser(null);
     setProfile(null);
+    setToken("");
   };
 
-  return (
-    <AuthContext.Provider
-      value={{
-        firebaseUser,
-        profile,
-        loading,
-        authError,
-        signInWithGoogle,
-        signOutUser,
-        refreshProfile,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  const value = useMemo(
+    () => ({
+      firebaseUser,
+      profile,
+      hasProfile: Boolean(profile),
+      loading,
+      authError,
+      token,
+      loginWithEmail,
+      signInWithGoogle,
+      signInWithGithub,
+      signOutUser,
+      refreshProfile,
+      setAuthError,
+    }),
+    [firebaseUser, profile, loading, authError, token, refreshProfile]
   );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

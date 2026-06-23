@@ -1,28 +1,20 @@
 const User = require("../models/User");
 
+function serializeUser(user) {
+  return user ? user.toObject?.() || user : null;
+}
+
 /**
  * POST /api/users/sync
- * Called right after a successful Firebase login on the frontend.
- * Creates the Mongo user record on first login, otherwise just returns it.
+ * Called after a successful Firebase login. It verifies the Mongo profile status
+ * without creating an incomplete profile; first-time users complete setup first.
  */
 async function syncUser(req, res, next) {
   try {
-    const { uid, email, name, picture } = req.firebaseUser;
-
-    let user = await User.findOne({ firebaseUid: uid });
-
-    if (!user) {
-      user = await User.create({
-        firebaseUid: uid,
-        email,
-        name: name || "",
-        photoURL: picture || "",
-      });
-    }
-
-    res.json(user);
+    const user = await User.findOne({ firebaseUid: req.firebaseUser.uid });
+    return res.json({ success: true, user: serializeUser(user) });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 }
 
@@ -32,38 +24,62 @@ async function syncUser(req, res, next) {
 async function getMe(req, res, next) {
   try {
     if (!req.userDoc) {
-      return res.status(404).json({ message: "Profile not found. Call /api/users/sync first." });
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found. Please complete profile setup.",
+      });
     }
-    res.json(req.userDoc);
+    return res.json({ success: true, user: serializeUser(req.userDoc) });
   } catch (err) {
     next(err);
+    return next(err);
   }
 }
 
 /**
  * PUT /api/users/me
- * Body: { name, college, branch, graduationYear, targetRole }
+ * Body: { name }
  */
 async function updateMe(req, res, next) {
   try {
-    const { name, college, branch, graduationYear, targetRole } = req.body;
+    const name = typeof req.body.name === "string" ? req.body.name.trim() : "";
+
+    if (!name) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Full name is required." });
+    }
 
     const user = await User.findOneAndUpdate(
       { firebaseUid: req.firebaseUser.uid },
       {
-        ...(name !== undefined && { name }),
-        ...(college !== undefined && { college }),
-        ...(branch !== undefined && { branch }),
-        ...(graduationYear !== undefined && { graduationYear }),
-        ...(targetRole !== undefined && { targetRole }),
-        profileComplete: true,
+        $set: {
+          firebaseUid: req.firebaseUser.uid,
+          email: req.firebaseUser.email,
+          name,
+          photoURL: req.firebaseUser.picture || "",
+          profileComplete: true,
+        },
       },
-      { new: true, upsert: true }
+      {
+        new: true,
+        upsert: true,
+        setDefaultsOnInsert: true,
+        runValidators: true,
+      },
     );
 
-    res.json(user);
+    return res.json({ success: true, user: serializeUser(user) });
   } catch (err) {
-    next(err);
+    if (err.code === 11000) {
+      return res
+        .status(409)
+        .json({
+          success: false,
+          message: "A profile already exists for this account.",
+        });
+    }
+    return next(err);
   }
 }
 

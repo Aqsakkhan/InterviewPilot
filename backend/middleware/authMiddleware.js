@@ -1,4 +1,4 @@
-const { admin, initFirebaseAdmin } = require("../config/firebaseAdmin");
+const { initFirebaseAdmin } = require("../config/firebaseAdmin");
 const User = require("../models/User");
 
 /**
@@ -11,36 +11,48 @@ async function requireAuth(req, res, next) {
   try {
     const authHeader = req.headers.authorization || "";
     const token = authHeader.startsWith("Bearer ")
-      ? authHeader.slice(7)
+      ? authHeader.slice(7).trim()
       : null;
 
     if (!token) {
-      return res.status(401).json({ message: "Missing Authorization bearer token." });
+      return res.status(401).json({
+        success: false,
+        message: "Missing Authorization bearer token.",
+      });
     }
 
     const fbAdmin = initFirebaseAdmin();
     if (!fbAdmin) {
-      return res.status(500).json({
-        message:
-          "Firebase Admin is not configured on the server. Fill in backend/.env (see .env.example).",
+      return res.status(503).json({
+        success: false,
+        message: "Firebase Admin is not configured on the server.",
       });
     }
 
     const decoded = await fbAdmin.auth().verifyIdToken(token);
 
+    if (!decoded?.uid) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid Firebase token." });
+    }
+
     req.firebaseUser = {
       uid: decoded.uid,
-      email: decoded.email,
+      email: decoded.email || "",
       name: decoded.name || "",
       picture: decoded.picture || "",
     };
 
     req.userDoc = await User.findOne({ firebaseUid: decoded.uid });
 
-    next();
+    return next();
   } catch (err) {
-    console.error("Auth verification failed:", err.message);
-    return res.status(401).json({ message: "Invalid or expired session. Please sign in again." });
+    console.error("Auth verification failed:", err?.message || err);
+    return res.status(401).json({
+      success: false,
+      message: "Invalid or expired session. Please sign in again.",
+    });
   }
 }
 
@@ -49,12 +61,14 @@ async function requireAuth(req, res, next) {
  * (resume upload, interviews, dashboard, etc).
  */
 function requireProfile(req, res, next) {
-  if (!req.userDoc) {
+  if (!req.userDoc || !req.userDoc.profileComplete) {
     return res.status(404).json({
-      message: "No profile found for this account yet. Please complete profile setup first.",
+      success: false,
+      message:
+        "No profile found for this account yet. Please complete profile setup first.",
     });
   }
-  next();
+  return next();
 }
 
 module.exports = { requireAuth, requireProfile };

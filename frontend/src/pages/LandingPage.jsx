@@ -59,7 +59,7 @@ const STEPS = [
 ];
 
 export default function LandingPage() {
-  const { firebaseUser, profile, signInWithGoogle } = useAuth();
+  const { firebaseUser, profile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function LandingPage() {
           InterviewPilot <span className="text-accent">AI</span>
         </div>
         <button
-          onClick={signInWithGoogle}
+          onClick={() => navigate("/login")}
           className="focus-ring text-sm px-4 py-2 rounded-lg border border-line text-ink hover:bg-white/5 transition-colors"
         >
           Sign in
@@ -109,7 +109,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-wrap items-center gap-3 mt-8">
             <button
-              onClick={signInWithGoogle}
+              onClick={() => navigate("/login")}
               className="focus-ring inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dim transition-colors"
             >
               Start Interview <ArrowRight size={16} />
@@ -191,10 +191,10 @@ export default function LandingPage() {
           <h2 className="font-display text-2xl sm:text-3xl font-semibold">Ready to walk in prepared?</h2>
           <p className="text-muted mt-3">Upload your resume and have your first AI interview in under five minutes.</p>
           <button
-            onClick={signInWithGoogle}
+            onClick={() => navigate("/login")}
             className="focus-ring inline-flex items-center gap-2 mt-6 px-6 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dim transition-colors"
           >
-            Continue with Google <ArrowRight size={16} />
+            Sign in <ArrowRight size={16} />
           </button>
         </GlassCard>
       </section>

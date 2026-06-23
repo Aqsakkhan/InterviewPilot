@@ -15,11 +15,21 @@ const app = express();
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
-  })
+  }),
 );
 app.use(express.json({ limit: "2mb" }));
 
-app.get("/api/health", (req, res) => res.json({ status: "ok", service: "InterviewPilot AI backend" }));
+process.on("unhandledRejection", (err) => {
+  console.error("Unhandled promise rejection:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception:", err);
+});
+
+app.get("/api/health", (req, res) =>
+  res.json({ status: "ok", service: "InterviewPilot AI backend" }),
+);
 
 app.use("/api/users", userRoutes);
 app.use("/api/resume", resumeRoutes);
@@ -30,8 +40,15 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`InterviewPilot AI backend running on http://localhost:${PORT}`);
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(
+        `InterviewPilot AI backend running on http://localhost:${PORT}`,
+      );
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to connect to MongoDB:", err);
+    process.exit(1);
   });
-});

@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import LandingPage from "./pages/LandingPage";
+import LoginPage from "./pages/LoginPage";
 import ProfileSetup from "./pages/ProfileSetup";
 import ResumeUpload from "./pages/ResumeUpload";
 import Dashboard from "./pages/Dashboard";
@@ -17,6 +18,7 @@ export default function App() {
       <AuthProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
           <Route
             path="/profile-setup"

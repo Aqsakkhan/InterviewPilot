@@ -3,7 +3,10 @@ const admin = require("firebase-admin");
 let initialized = false;
 
 function initFirebaseAdmin() {
-  if (initialized) return admin;
+  if (initialized || admin.apps.length) {
+    initialized = true;
+    return admin;
+  }
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
@@ -13,21 +16,21 @@ function initFirebaseAdmin() {
 
   if (!projectId || !clientEmail || !privateKey) {
     console.warn(
-      "Firebase Admin credentials are incomplete. Auth-protected routes will reject all requests until backend/.env is filled in (see .env.example)."
+      "Firebase Admin credentials are incomplete. Auth-protected routes will return JSON 503 responses.",
     );
     return null;
   }
 
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId,
-      clientEmail,
-      privateKey,
-    }),
-  });
-
-  initialized = true;
-  return admin;
+  try {
+    admin.initializeApp({
+      credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
+    });
+    initialized = true;
+    return admin;
+  } catch (err) {
+    console.error("Firebase Admin initialization failed:", err?.message || err);
+    return null;
+  }
 }
 
 module.exports = { admin, initFirebaseAdmin };
