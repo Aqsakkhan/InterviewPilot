@@ -89,9 +89,6 @@ export default function LoginPage() {
                         <button type="button" disabled={busy} onClick={() => runLogin(signInWithGoogle, "google")} className="focus-ring w-full inline-flex items-center justify-center gap-3 px-5 py-3 rounded-xl border border-line bg-white/5 text-ink hover:bg-white/10 transition-colors disabled:opacity-60">
                             <GoogleIcon /> {submitting === "google" ? "Opening Google..." : "Continue with Google"}
                         </button>
-                        <button type="button" disabled={busy} onClick={() => runLogin(signInWithGithub, "github")} className="focus-ring w-full inline-flex items-center justify-center gap-3 px-5 py-3 rounded-xl border border-line bg-white/5 text-ink hover:bg-white/10 transition-colors disabled:opacity-60">
-                            <Github size={20} /> {submitting === "github" ? "Opening GitHub..." : "Continue with GitHub"}
-                        </button>
                     </div>
 
                     {(localError || authError) && <p className="text-sm text-red-400 mt-5 text-center">{localError || authError}</p>}
