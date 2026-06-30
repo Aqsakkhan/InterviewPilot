@@ -10,11 +10,40 @@ import {
 } from "lucide-react";
 
 import GlassCard from "../components/GlassCard";
-import { useResume } from "../context/ResumeContext";
+import { useEffect, useState } from "react";
+import client from "../api/client";
 
 export default function ResumeManagement() {
     const navigate = useNavigate();
-    const { resume } = useResume();
+    const [resume, setResume] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function loadResume() {
+            try {
+                const { data } = await client.get("/resume/me");
+                setResume(data);
+            } catch (err) {
+                console.error(err);
+
+                if (err.response?.status !== 404) {
+                    alert("Failed to load resume.");
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        loadResume();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="max-w-6xl mx-auto py-10 text-center">
+                Loading Resume...
+            </div>
+        );
+    }
 
     const displayResumeName =
         resume?.fileName?.length > 40
