@@ -39,8 +39,11 @@ export default function ResumeManagement() {
 
     if (loading) {
         return (
-            <div className="max-w-6xl mx-auto py-10 text-center">
-                Loading Resume...
+            <div className="max-w-6xl mx-auto py-20 text-center">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-8 w-48 mx-auto rounded bg-surface-2"></div>
+                    <div className="h-4 w-72 mx-auto rounded bg-surface-2"></div>
+                </div>
             </div>
         );
     }
@@ -71,7 +74,7 @@ export default function ResumeManagement() {
                 </h1>
 
                 <p className="text-muted mt-2">
-                    Manage your uploaded resume and AI analysis.
+                    View your uploaded resume and manage future resume updates.
                 </p>
             </div>
 
@@ -118,7 +121,7 @@ export default function ResumeManagement() {
                             </p>
 
                             <p className="text-sm text-green-300 mt-2">
-                                Your resume has been analyzed successfully.
+                                Your resume is ready for AI-powered interview generation.
                             </p>
 
                         </div>
@@ -185,15 +188,27 @@ export default function ResumeManagement() {
                             </h2>
 
                             <button
-                                onClick={() => navigate("/resume-upload")}
+                                onClick={() => {
+                                    const ok = window.confirm(
+                                        "Uploading a new resume will replace your current resume and AI analysis. Continue?"
+                                    );
+
+                                    if (ok) {
+                                        navigate("/resume-upload");
+                                    }
+                                }}
                                 className="focus-ring flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-white hover:brightness-110 transition"
                             >
 
+
                                 <UploadCloud size={18} />
 
-                                Upload New Resume
+                                Replace Resume
 
                             </button>
+                            <p className="text-xs text-muted mt-3">
+                                Uploading a new resume will replace your current resume analysis.
+                            </p>
 
                         </div>
 
