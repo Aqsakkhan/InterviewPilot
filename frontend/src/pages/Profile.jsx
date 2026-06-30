@@ -16,7 +16,11 @@ import {
 } from "lucide-react";
 
 export default function Profile() {
-    const { profile, firebaseUser } = useAuth();
+    const {
+        profile,
+        firebaseUser,
+        refreshProfile,
+    } = useAuth();
 
     const name =
         profile?.name ||
@@ -35,6 +39,10 @@ export default function Profile() {
     const navigate = useNavigate();
 
     const [resume, setResume] = useState(null);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [displayName, setDisplayName] = useState(name);
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState("");
 
     useEffect(() => {
         client
@@ -42,6 +50,35 @@ export default function Profile() {
             .then(({ data }) => setResume(data))
             .catch(() => setResume(null));
     }, []);
+
+    const handleSaveProfile = async () => {
+        const trimmedName = displayName.trim();
+
+        if (!trimmedName) {
+            setSaveError("Full name is required.");
+            return;
+        }
+
+        try {
+            setSaving(true);
+            setSaveError("");
+
+            await client.put("/users/me", {
+                name: trimmedName,
+            });
+
+            await refreshProfile();
+
+            setShowEditModal(false);
+        } catch (err) {
+            setSaveError(
+                err.response?.data?.message ||
+                "Unable to update profile."
+            );
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <div className="max-w-3xl mx-auto py-8 space-y-6">
@@ -139,24 +176,19 @@ export default function Profile() {
 
                 <div className="flex flex-wrap gap-4">
                     <button
-                        disabled
-                        className="flex items-center gap-2 px-5 py-3 rounded-xl border border-line bg-surface-2 text-muted cursor-not-allowed opacity-70"
+                        onClick={() => {
+                            setDisplayName(name);
+                            setSaveError("");
+                            setShowEditModal(true);
+                        }}
+                        className="flex items-center gap-2 px-5 py-3 rounded-xl border border-line bg-surface-2 hover:bg-white/5 transition-colors"
                     >
                         <Pencil size={18} />
                         Edit Profile
-                        <span className="text-xs">(Coming Soon)</span>
-                    </button>
-
-                    <button
-                        disabled
-                        className="flex items-center gap-2 px-5 py-3 rounded-xl border border-line bg-surface-2 text-muted cursor-not-allowed opacity-70"
-                    >
-                        <FileText size={18} />
-                        Replace Resume
-                        <span className="text-xs">(Coming Soon)</span>
                     </button>
                 </div>
             </GlassCard>
+
 
             {/* Resume */}
             <GlassCard className="p-6">
@@ -264,6 +296,58 @@ export default function Profile() {
                     </div>
                 )}
             </GlassCard>
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+
+                    <GlassCard className="w-full max-w-md p-6">
+
+                        <h2 className="text-xl font-semibold mb-5">
+                            Edit Profile
+                        </h2>
+
+                        <label className="text-sm text-muted">
+                            Full Name
+                        </label>
+
+                        <input
+                            value={displayName}
+                            onChange={(e) => setDisplayName(e.target.value)}
+                            className="w-full mt-2 mb-6 rounded-lg bg-surface-2 border border-line px-4 py-3 outline-none"
+                        />
+
+                        {saveError && (
+                            <p className="text-red-400 text-sm mb-4">
+                                {saveError}
+                            </p>
+                        )}
+
+                        <div className="flex justify-end gap-3">
+
+                            <button
+                                onClick={() => {
+                                    setDisplayName(name);
+                                    setSaveError("");
+                                    setShowEditModal(false);
+                                }}
+                                className="px-4 py-2 rounded-lg border border-line"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleSaveProfile}
+                                disabled={saving}
+                                className="px-5 py-2 rounded-lg bg-primary text-white disabled:opacity-60"
+                            >
+                                {saving ? "Saving..." : "Save"}
+                            </button>
+
+                        </div>
+
+                    </GlassCard>
+
+                </div>
+            )}
         </div>
     );
 }
