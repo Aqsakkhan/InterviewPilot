@@ -61,27 +61,39 @@ export default function Navbar({ onboarding = false }) {
         <div className="flex items-center gap-3">
           {!onboarding && (
             <>
-              <span className="hidden sm:block text-sm text-muted">
-                {profile?.name || profile?.email}
-              </span>
+              <Link to="/profile">
+                {profile?.photoURL ? (
+                  <img
+                    src={profile.photoURL}
+                    alt={profile?.name || "Profile"}
+                    className="w-8 h-8 rounded-full border border-line object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
 
-              {profile?.photoURL ? (
-                <img
-                  src={profile.photoURL}
-                  alt={profile?.name || "Profile"}
-                  className="w-8 h-8 rounded-full border border-line object-cover"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
+                      const fallback =
+                        e.currentTarget.parentElement?.querySelector(".avatar-fallback");
 
-                    const fallback =
-                      e.currentTarget.parentElement?.querySelector(".avatar-fallback");
+                      if (fallback) {
+                        fallback.style.display = "grid";
+                      }
+                    }}
+                  />
+                ) : null}
 
-                    if (fallback) {
-                      fallback.style.display = "grid";
-                    }
+                <span
+                  className="avatar-fallback w-8 h-8 rounded-full bg-surface-2 grid place-items-center text-xs font-semibold"
+                  style={{
+                    display: profile?.photoURL ? "none" : "grid",
                   }}
-                />
-              ) : null}
+                >
+                  {(
+                    profile?.name ||
+                    profile?.email ||
+                    firebaseUser?.email ||
+                    "?"
+                  )[0]?.toUpperCase()}
+                </span>
+              </Link>
 
               <span
                 className="avatar-fallback w-8 h-8 rounded-full bg-surface-2 grid place-items-center text-xs font-semibold"

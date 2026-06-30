@@ -5,6 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import ProfileSetup from "./pages/ProfileSetup";
+import Profile from "./pages/Profile";
 import ResumeUpload from "./pages/ResumeUpload";
 import Dashboard from "./pages/Dashboard";
 import InterviewConfig from "./pages/InterviewConfig";
@@ -34,6 +35,15 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ResumeUpload />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />
