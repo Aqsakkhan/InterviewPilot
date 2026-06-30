@@ -17,6 +17,7 @@ app.use(
     origin: process.env.CLIENT_URL || "http://localhost:5173",
   }),
 );
+
 app.use(express.json({ limit: "2mb" }));
 
 process.on("unhandledRejection", (err) => {
@@ -28,7 +29,10 @@ process.on("uncaughtException", (err) => {
 });
 
 app.get("/api/health", (req, res) =>
-  res.json({ status: "ok", service: "InterviewPilot AI backend" }),
+  res.json({
+    status: "ok",
+    service: "InterviewPilot AI backend",
+  }),
 );
 
 app.use("/api/users", userRoutes);
