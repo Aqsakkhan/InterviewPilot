@@ -7,7 +7,6 @@ import LoginPage from "./pages/LoginPage";
 import ProfileSetup from "./pages/ProfileSetup";
 import Profile from "./pages/Profile";
 import ResumeUpload from "./pages/ResumeUpload";
-import ResumeManagement from "./pages/ResumeManagement";
 import Dashboard from "./pages/Dashboard";
 import InterviewConfig from "./pages/InterviewConfig";
 import InterviewSession from "./pages/InterviewSession";
@@ -47,10 +46,6 @@ export default function App() {
                 <Profile />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="/resume-management"
-            element={<ResumeManagement />}
           />
 
           <Route

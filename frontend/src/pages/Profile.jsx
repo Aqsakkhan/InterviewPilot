@@ -184,7 +184,7 @@ export default function Profile() {
                         onClick={() => {
                             setDisplayName(name);
                             setSaveError("");
-                            navigate("/resume-management");
+                            navigate("/resume-upload");
                         }}
                         className="flex items-center gap-2 px-5 py-3 rounded-xl border border-line bg-surface-2 hover:bg-white/5 transition-colors"
                     >
@@ -193,7 +193,7 @@ export default function Profile() {
                     </button>
 
                     <button
-                        onClick={() => navigate("/resume-management")}
+                        onClick={() => navigate("/resume-upload")}
                         className="flex items-center gap-2 px-5 py-3 rounded-xl border border-line bg-surface-2 hover:bg-white/5 transition-colors"
                     >
                         <FileText size={18} />
