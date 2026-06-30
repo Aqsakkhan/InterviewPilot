@@ -1,6 +1,5 @@
 const Resume = require("../models/Resume");
-const { extractTextFromPdf } = require("../services/resumeParserService");
-const { extractResumeData } = require("../services/geminiService");
+const { parseResumePdf } = require("../services/resumeParserService");
 
 /**
  * POST /api/resume/upload  (multipart/form-data, field name "resume")
@@ -8,27 +7,32 @@ const { extractResumeData } = require("../services/geminiService");
 async function uploadResume(req, res, next) {
   try {
     if (!req.file) {
-      return res.status(400).json({ message: "No file uploaded. Attach a PDF under field name 'resume'." });
+      return res.status(400).json({
+        message: "No file uploaded. Attach a PDF under field name 'resume'.",
+      });
     }
 
-    const rawText = await extractTextFromPdf(req.file.buffer);
-    const extracted = await extractResumeData(rawText);
+    const parsed = await parseResumePdf(req.file.buffer);
 
     const resume = await Resume.findOneAndUpdate(
       { user: req.userDoc._id },
       {
         user: req.userDoc._id,
         fileName: req.file.originalname,
-        rawText,
-        skills: extracted.skills || [],
-        projects: extracted.projects || [],
-        internships: extracted.internships || [],
-        education: extracted.education || [],
-        certifications: extracted.certifications || [],
-        strongAreas: extracted.strongAreas || [],
-        weakAreas: extracted.weakAreas || [],
+        rawText: parsed.rawText,
+        name: parsed.name,
+        email: parsed.email,
+        phone: parsed.phone,
+        skills: parsed.skills || [],
+        projects: parsed.projects || [],
+        internships: parsed.experience || [],
+        experience: parsed.experience || [],
+        education: parsed.education || [],
+        certifications: parsed.certifications || [],
+        strongAreas: parsed.skills || [],
+        weakAreas: [],
       },
-      { new: true, upsert: true }
+      { new: true, upsert: true },
     );
 
     res.json(resume);

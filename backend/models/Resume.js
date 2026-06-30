@@ -6,16 +6,17 @@ const projectSchema = new mongoose.Schema(
     description: String,
     techStack: [String],
   },
-  { _id: false }
+  { _id: false },
 );
 
-const internshipSchema = new mongoose.Schema(
+const experienceSchema = new mongoose.Schema(
   {
     company: String,
     role: String,
     description: String,
+    date: String,
   },
-  { _id: false }
+  { _id: false },
 );
 
 const educationSchema = new mongoose.Schema(
@@ -24,26 +25,36 @@ const educationSchema = new mongoose.Schema(
     institution: String,
     year: String,
   },
-  { _id: false }
+  { _id: false },
 );
 
 const resumeSchema = new mongoose.Schema(
   {
-    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, unique: true },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+      unique: true,
+    },
 
     fileName: String,
     rawText: String,
 
+    name: String,
+    email: String,
+    phone: String,
+
     skills: [String],
     projects: [projectSchema],
-    internships: [internshipSchema],
+    internships: [experienceSchema],
+    experience: [experienceSchema],
     education: [educationSchema],
     certifications: [String],
 
     strongAreas: [String],
     weakAreas: [String],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Resume", resumeSchema);
