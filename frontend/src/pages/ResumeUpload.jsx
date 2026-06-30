@@ -14,6 +14,7 @@ export default function ResumeUpload() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
+  const [uploadStage, setUploadStage] = useState("");
 
   useEffect(() => {
     client
@@ -31,20 +32,36 @@ export default function ResumeUpload() {
     }
     setFileName(file.name);
     setUploading(true);
+    setUploading(true);
+    setUploadStage("Uploading resume...");
     setError("");
 
     const formData = new FormData();
+    setUploadStage("Extracting resume...");
     formData.append("resume", file);
 
     try {
+      setUploadStage("Analyzing with AI...");
       const { data } = await client.post("/resume/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setResume(data);
+      setUploadStage("Resume uploaded successfully!");
     } catch (err) {
-      setError(err.response?.data?.message || "Couldn't analyze that resume. Try another file.");
+      if (!err.response) {
+        setError("Network error. Please check your internet connection.");
+      } else if (err.response.status === 400) {
+        setError("Please upload a valid PDF file.");
+      } else if (err.response.status === 413) {
+        setError("Resume size exceeds the allowed limit.");
+      } else {
+        setError("Unable to analyze your resume. Please try again.");
+      }
     } finally {
-      setUploading(false);
+      setTimeout(() => {
+        setUploading(false);
+        setUploadStage("");
+      }, 600);
     }
   };
 
@@ -76,9 +93,18 @@ export default function ResumeUpload() {
 
         {!resume && (
           <div
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              const ok = window.confirm(
+                "Replace your current resume with a new one?"
+              );
+
+              if (ok) {
+                fileInputRef.current?.click();
+              }
+            }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
+              if (uploading) return;
               e.preventDefault();
               handleFile(e.dataTransfer.files?.[0]);
             }}
@@ -93,9 +119,17 @@ export default function ResumeUpload() {
             />
             <UploadCloud className="mx-auto text-accent" size={32} />
             <p className="mt-3 text-ink font-medium">
-              {uploading ? `Analyzing ${fileName}...` : "Click to upload or drag your resume here"}
+              {uploading ? uploadStage : "Click to upload or drag your resume here"}
             </p>
-            <p className="text-muted text-sm mt-1">PDF, up to 8MB</p>
+            <p className="text-muted text-sm mt-1">Supported Format: PDF
+
+              Maximum Size: 8 MB
+
+              AI extracts:
+              • Skills
+              • Projects
+              • Experience
+              • Education</p>
           </div>
         )}
 
@@ -108,6 +142,17 @@ export default function ResumeUpload() {
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-center mb-5">
+              <div className="bg-success/10 border border-success/20 rounded-xl p-4 mb-5">
+                <h3 className="font-medium text-success">
+                  AI Analysis Completed
+                </h3>
+
+                <p className="text-sm text-muted mt-1">
+                  Your resume has been analyzed successfully and interview
+                  questions will now be personalized using your skills,
+                  projects and experience.
+                </p>
+              </div>
               <Stat label="Projects" value={resume.projects?.length || 0} />
               <Stat label="Skills" value={resume.skills?.length || 0} />
               <Stat label="Internships" value={resume.internships?.length || 0} />
@@ -120,7 +165,11 @@ export default function ResumeUpload() {
 
             <div className="flex gap-3 mt-6">
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => {
+                  if (!uploading) {
+                    fileInputRef.current?.click();
+                  }
+                }}
                 className="focus-ring inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-line text-ink hover:bg-white/5 transition-colors text-sm"
               >
                 <RefreshCcw size={14} /> Replace resume
