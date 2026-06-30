@@ -40,14 +40,13 @@ export default function Profile() {
 
     const [resume, setResume] = useState(null);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [showResumeModal, setShowResumeModal] = useState(false);
     const [displayName, setDisplayName] = useState(name);
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState("");
 
     const displayResumeName =
-        resume?.fileName?.length > 30
-            ? resume.fileName.slice(0, 30) + "..."
+        resume?.fileName?.length > 20
+            ? resume.fileName.slice(0, 20) + "..."
             : resume?.fileName;
 
     useEffect(() => {
@@ -185,7 +184,7 @@ export default function Profile() {
                         onClick={() => {
                             setDisplayName(name);
                             setSaveError("");
-                            setShowEditModal(true);
+                            navigate("/resume-management");
                         }}
                         className="flex items-center gap-2 px-5 py-3 rounded-xl border border-line bg-surface-2 hover:bg-white/5 transition-colors"
                     >
@@ -194,263 +193,77 @@ export default function Profile() {
                     </button>
 
                     <button
-                        onClick={() => setShowResumeModal(true)}
+                        onClick={() => navigate("/resume-management")}
                         className="flex items-center gap-2 px-5 py-3 rounded-xl border border-line bg-surface-2 hover:bg-white/5 transition-colors"
                     >
                         <FileText size={18} />
-                        Manage Resume
+                        Resume Center
                     </button>
 
-                    {showResumeModal && (
-                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-                            <GlassCard className="w-full max-w-md p-6">
-
-                                <h2 className="text-2xl font-semibold">
-                                    Manage Resume
-                                </h2>
-
-                                <p className="text-sm text-muted mt-2">
-                                    View your uploaded resume and AI analysis.
-                                </p>
-
-                                <div className="space-y-5">
-
-                                    <div>
-                                        <p className="text-xs uppercase tracking-wide text-muted">
-                                            Uploaded Resume
-                                        </p>
-
-                                        <p
-                                            className="font-medium mt-2"
-                                            title={resume?.fileName}
-                                        >
-                                            {displayResumeName || "No Resume Uploaded"}
-                                        </p>
-                                    </div>
-
-                                    <div className="grid grid-cols-3 gap-4">
-
-                                        <div className="rounded-xl bg-surface-2 p-4 text-center">
-                                            <p className="text-2xl font-bold">
-                                                {resume?.skills?.length || 0}
-                                            </p>
-
-                                            <p className="text-xs text-muted">
-                                                Skills
-                                            </p>
-                                        </div>
-
-                                        <div className="rounded-xl bg-surface-2 p-4 text-center">
-                                            <p className="text-2xl font-bold">
-                                                {resume?.projects?.length || 0}
-                                            </p>
-
-                                            <p className="text-xs text-muted">
-                                                Projects
-                                            </p>
-                                        </div>
-
-                                        <div className="rounded-xl bg-surface-2 p-4 text-center">
-                                            <p className="text-2xl font-bold">
-                                                {resume?.internships?.length || 0}
-                                            </p>
-
-                                            <p className="text-xs text-muted">
-                                                Internships
-                                            </p>
-                                        </div>
-
-                                    </div>
-
-                                    <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
-                                        <p className="font-semibold text-green-400">
-                                            ✓ AI Analysis Completed
-                                        </p>
-
-                                        <p className="text-sm text-green-300 mt-1">
-                                            Your resume is ready for interviews.
-                                        </p>
-                                    </div>
-
-                                </div>
-
-                                <div className="flex justify-end gap-3 mt-8">
-
-                                    <button
-                                        onClick={() => setShowResumeModal(false)}
-                                        className="px-4 py-2 rounded-lg border border-line"
-                                    >
-                                        Close
-                                    </button>
-
-                                    <button
-                                        onClick={() => {
-                                            const ok = window.confirm(
-                                                "Uploading a new resume will replace your existing resume. Continue?"
-                                            );
-
-                                            if (ok) {
-                                                navigate("/resume-upload");
-                                            }
-                                        }}
-                                        className="px-5 py-2 rounded-lg bg-primary text-white flex items-center gap-2"
-                                    >
-                                        <UploadCloud size={18} />
-                                        Upload New Resume
-                                    </button>
-
-                                </div>
-
-                            </GlassCard>
-                        </div>
-                    )}
                 </div>
-            </GlassCard>
+            </GlassCard >
 
 
             {/* Resume */}
-            <GlassCard className="p-6">
+            <GlassCard GlassCard className="p-6" >
                 <h2 className="font-display text-xl font-semibold mb-6">
                     Resume
                 </h2>
 
-                {resume ? (
-                    <>
-                        <div className="space-y-5">
+                {
+                    resume ? (
+                        <>
+                            <div className="space-y-5">
 
-                            <div className="flex items-center gap-3">
-                                <FileText className="text-accent" size={20} />
+                                <div className="flex items-center gap-3">
+                                    <FileText className="text-accent" size={20} />
 
-                                <div>
-                                    <p className="text-xs uppercase tracking-wide text-muted">
-                                        Resume File
-                                    </p>
+                                    <div>
+                                        <p className="text-xs uppercase tracking-wide text-muted">
+                                            Resume File
+                                        </p>
 
-                                    <p className="font-medium">
-                                        {resume.fileName}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4">
-
-                                <div className="text-center rounded-xl bg-surface-2 p-4">
-                                    <Brain className="mx-auto text-accent mb-2" />
-                                    <p className="text-xl font-semibold">
-                                        {resume.skills?.length || 0}
-                                    </p>
-                                    <p className="text-xs text-muted">
-                                        Skills
-                                    </p>
+                                        <p className="font-medium">
+                                            {displayResumeName}
+                                        </p>
+                                    </div>
                                 </div>
 
-                                <div className="text-center rounded-xl bg-surface-2 p-4">
-                                    <FolderKanban className="mx-auto text-accent mb-2" />
-                                    <p className="text-xl font-semibold">
-                                        {resume.projects?.length || 0}
-                                    </p>
-                                    <p className="text-xs text-muted">
-                                        Projects
-                                    </p>
-                                </div>
+                                <div className="flex justify-between items-center border-t border-line pt-5">
 
-                                <div className="text-center rounded-xl bg-surface-2 p-4">
-                                    <Briefcase className="mx-auto text-accent mb-2" />
-                                    <p className="text-xl font-semibold">
-                                        {resume.experience?.length || 0}
-                                    </p>
-                                    <p className="text-xs text-muted">
-                                        Experience
-                                    </p>
+                                    <span className="inline-flex px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm">
+                                        ✓ Ready for AI Interviews
+                                    </span>
+
+
                                 </div>
 
                             </div>
+                        </>
+                    ) : (
+                        <div className="text-center py-10">
 
-                            <div className="flex justify-between items-center border-t border-line pt-5">
+                            <UploadCloud
+                                className="mx-auto mb-4 text-muted"
+                                size={42}
+                            />
 
-                                <span className="inline-flex px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm">
-                                    AI Analysis Completed
-                                </span>
-
-
-                            </div>
-
-                        </div>
-                    </>
-                ) : (
-                    <div className="text-center py-10">
-
-                        <UploadCloud
-                            className="mx-auto mb-4 text-muted"
-                            size={42}
-                        />
-
-                        <p className="text-muted mb-5">
-                            No resume uploaded yet.
-                        </p>
-
-                        <button
-                            onClick={() => navigate("/resume-upload")}
-                            className="focus-ring px-5 py-2 rounded-lg bg-primary text-white hover:bg-primary-dim transition-colors"
-                        >
-                            Upload Resume
-                        </button>
-
-                    </div>
-                )}
-            </GlassCard>
-            {showEditModal && (
-                <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-
-                    <GlassCard className="w-full max-w-md p-6">
-
-                        <h2 className="text-xl font-semibold mb-5">
-                            Edit Profile
-                        </h2>
-
-                        <label className="text-sm text-muted">
-                            Full Name
-                        </label>
-
-                        <input
-                            value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            className="w-full mt-2 mb-6 rounded-lg bg-surface-2 border border-line px-4 py-3 outline-none"
-                        />
-
-                        {saveError && (
-                            <p className="text-red-400 text-sm mb-4">
-                                {saveError}
+                            <p className="text-muted mb-5">
+                                Upload your resume to unlock AI-powered interviews.
                             </p>
-                        )}
-
-                        <div className="flex justify-end gap-3">
 
                             <button
-                                onClick={() => {
-                                    setDisplayName(name);
-                                    setSaveError("");
-                                    setShowEditModal(false);
-                                }}
-                                className="px-4 py-2 rounded-lg border border-line"
+                                onClick={() => navigate("/resume-upload")}
+                                className="focus-ring px-5 py-2 rounded-lg bg-primary text-white hover:bg-primary-dim transition-colors"
                             >
-                                Cancel
-                            </button>
-
-                            <button
-                                onClick={handleSaveProfile}
-                                disabled={saving}
-                                className="px-5 py-2 rounded-lg bg-primary text-white disabled:opacity-60"
-                            >
-                                {saving ? "Saving..." : "Save"}
+                                Upload Resume
                             </button>
 
                         </div>
+                    )
+                }
+            </GlassCard >
 
-                    </GlassCard>
-
-                </div>
-            )}
-        </div>
+        </div >
     );
 }
