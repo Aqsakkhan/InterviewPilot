@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import client from "../api/client";
 import GlassCard from "../components/GlassCard";
 import {
     User,
@@ -6,6 +9,10 @@ import {
     CheckCircle,
     Pencil,
     FileText,
+    UploadCloud,
+    Briefcase,
+    FolderKanban,
+    Brain,
 } from "lucide-react";
 
 export default function Profile() {
@@ -24,6 +31,17 @@ export default function Profile() {
     const photo =
         profile?.photoURL ||
         firebaseUser?.photoURL;
+
+    const navigate = useNavigate();
+
+    const [resume, setResume] = useState(null);
+
+    useEffect(() => {
+        client
+            .get("/resume/me")
+            .then(({ data }) => setResume(data))
+            .catch(() => setResume(null));
+    }, []);
 
     return (
         <div className="max-w-3xl mx-auto py-8 space-y-6">
@@ -138,6 +156,113 @@ export default function Profile() {
                         <span className="text-xs">(Coming Soon)</span>
                     </button>
                 </div>
+            </GlassCard>
+
+            {/* Resume */}
+            <GlassCard className="p-6">
+                <h2 className="font-display text-xl font-semibold mb-6">
+                    Resume
+                </h2>
+
+                {resume ? (
+                    <>
+                        <div className="space-y-5">
+
+                            <div className="flex items-center gap-3">
+                                <FileText className="text-accent" size={20} />
+
+                                <div>
+                                    <p className="text-xs uppercase tracking-wide text-muted">
+                                        Resume File
+                                    </p>
+
+                                    <p className="font-medium">
+                                        {resume.fileName}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-4">
+
+                                <div className="text-center rounded-xl bg-surface-2 p-4">
+                                    <Brain className="mx-auto text-accent mb-2" />
+                                    <p className="text-xl font-semibold">
+                                        {resume.skills?.length || 0}
+                                    </p>
+                                    <p className="text-xs text-muted">
+                                        Skills
+                                    </p>
+                                </div>
+
+                                <div className="text-center rounded-xl bg-surface-2 p-4">
+                                    <FolderKanban className="mx-auto text-accent mb-2" />
+                                    <p className="text-xl font-semibold">
+                                        {resume.projects?.length || 0}
+                                    </p>
+                                    <p className="text-xs text-muted">
+                                        Projects
+                                    </p>
+                                </div>
+
+                                <div className="text-center rounded-xl bg-surface-2 p-4">
+                                    <Briefcase className="mx-auto text-accent mb-2" />
+                                    <p className="text-xl font-semibold">
+                                        {resume.experience?.length || 0}
+                                    </p>
+                                    <p className="text-xs text-muted">
+                                        Experience
+                                    </p>
+                                </div>
+
+                            </div>
+
+                            <div className="flex justify-between items-center border-t border-line pt-5">
+
+                                <span className="inline-flex px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm">
+                                    AI Analysis Completed
+                                </span>
+
+                                <button
+                                    onClick={() => {
+                                        const ok = window.confirm(
+                                            "Replace your current resume?"
+                                        );
+
+                                        if (ok) {
+                                            navigate("/resume-upload");
+                                        }
+                                    }}
+                                    className="focus-ring flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-dim transition-colors"
+                                >
+                                    <UploadCloud size={18} />
+                                    Replace Resume
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </>
+                ) : (
+                    <div className="text-center py-10">
+
+                        <UploadCloud
+                            className="mx-auto mb-4 text-muted"
+                            size={42}
+                        />
+
+                        <p className="text-muted mb-5">
+                            No resume uploaded yet.
+                        </p>
+
+                        <button
+                            onClick={() => navigate("/resume-upload")}
+                            className="focus-ring px-5 py-2 rounded-lg bg-primary text-white hover:bg-primary-dim transition-colors"
+                        >
+                            Upload Resume
+                        </button>
+
+                    </div>
+                )}
             </GlassCard>
         </div>
     );
