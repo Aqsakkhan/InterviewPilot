@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Mic, Square, Send, Volume2, FlagOff } from "lucide-react";
+import { Mic, Square, Send, Volume2 } from "lucide-react";
 import client from "../api/client";
 import GlassCard from "../components/GlassCard";
 import InterviewerOrb from "../components/InterviewerOrb";
+import InterviewContextBar from "../components/InterviewContextBar";
 import { useSpeechRecognition } from "../hooks/useSpeechRecognition";
 import { useSpeechSynthesis } from "../hooks/useSpeechSynthesis";
 
@@ -108,41 +109,25 @@ export default function InterviewSession() {
   if (!interview) return <p className="text-muted">Interview not found.</p>;
 
   const orbState = submitting ? "thinking" : speechSyn.isSpeaking ? "speaking" : speechRec.isListening ? "listening" : "idle";
-  const progress = Math.min(interview.qa.length, interview.targetQuestionCount);
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <p className="text-xs font-mono uppercase tracking-wide text-muted">
-            {interview.type.replace("_", " ")} - {interview.difficulty}
-          </p>
-          <p className="text-sm text-ink mt-0.5">
-            Question {interview.qa.length} of ~{interview.targetQuestionCount}
-          </p>
-        </div>
-        <button
-          onClick={endEarly}
-          className="focus-ring flex items-center gap-1.5 text-xs text-muted hover:text-red-400 transition-colors"
-        >
-          <FlagOff size={14} /> End interview
-        </button>
-      </div>
-
-      <div className="w-full h-1.5 rounded-full bg-white/5 mb-8 overflow-hidden">
-        <div
-          className="h-full bg-linear-to-r from-primary to-accent transition-all duration-500"
-          style={{ width: `${(progress / interview.targetQuestionCount) * 100}%` }}
-        />
-      </div>
+      <InterviewContextBar
+        company={interview.company}
+        jobRole={interview.jobRole}
+        type={interview.type}
+        difficulty={interview.difficulty}
+        currentCount={interview.qa.length}
+        targetCount={interview.targetQuestionCount}
+        onEndInterview={endEarly}
+      />
 
       <div className="flex flex-col items-center gap-5 mb-8">
         <InterviewerOrb state={orbState} size={140} />
         {currentQuestion && (
           <span
-            className={`text-xs font-mono uppercase tracking-wide border rounded-full px-2.5 py-1 ${
-              CATEGORY_STYLE[currentQuestion.category] || CATEGORY_STYLE.general
-            }`}
+            className={`text-xs font-mono uppercase tracking-wide border rounded-full px-2.5 py-1 ${CATEGORY_STYLE[currentQuestion.category] || CATEGORY_STYLE.general
+              }`}
           >
             {currentQuestion.category}
           </span>
@@ -167,11 +152,10 @@ export default function InterviewSession() {
             {speechRec.isSupported && (
               <button
                 onClick={toggleMic}
-                className={`focus-ring flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                  speechRec.isListening
+                className={`focus-ring flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${speechRec.isListening
                     ? "border-accent text-accent bg-accent/10"
                     : "border-line text-muted hover:bg-white/5"
-                }`}
+                  }`}
               >
                 {speechRec.isListening ? <Square size={12} /> : <Mic size={12} />}
                 {speechRec.isListening ? "Stop" : "Speak"}
