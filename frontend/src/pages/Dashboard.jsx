@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import client from "../api/client";
 import GlassCard from "../components/GlassCard";
 import ScoreRing from "../components/ScoreRing";
+import { useNavigate } from "react-router-dom";
 
 const QUICK_ACTIONS = [
   { type: "full_placement", label: "Start Mock Interview", icon: Sparkles, tone: "from-primary to-secondary" },
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [resume, setResume] = useState(null);
   const [hasResume, setHasResume] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     client.get("/interviews/stats/summary").then(({ data }) => setStats(data));
@@ -163,6 +165,12 @@ export default function Dashboard() {
             <div>
               <span className="text-xs text-muted font-mono uppercase">Skills tracked</span>
               <p className="text-sm mt-1">{resume.skills?.length || 0}</p>
+              <button
+                onClick={() => navigate("/resume-report")}
+                className="mt-6 inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-white hover:bg-primary-dim transition-colors"
+              >
+                View Full Resume Report →
+              </button>
             </div>
           </GlassCard>
         </div>
