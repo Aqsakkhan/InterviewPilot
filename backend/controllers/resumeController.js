@@ -6,7 +6,7 @@
  * Routes (see resumeRoutes.js):
  *   POST   /api/resume/upload          — upload + parse + analyze
  *   GET    /api/resume/me              — fetch current resume
- *   POST   /api/resume/analyze         — re-run analysis (no re-upload needed)
+ *   POST   /api/resume/analyze         — re-run analysis (optional role in body)
  *   GET    /api/resume/analysis/pdf    — download PDF report
  */
 
@@ -16,12 +16,18 @@ const {
   extractTextFromPdf,
   parseResumeText,
 } = require("../services/resumeParserService");
-const { computeResumeAnalysis } = require("../services/resumeAnalysisService");
+const {
+  computeResumeAnalysis,
+  ROLE_KEYWORDS,
+} = require("../services/resumeAnalysisService");
 const {
   generateResumeAnalysisPdf,
 } = require("../services/resumeReportService");
 
-/* ── Fallback helpers (preserved from Phase 2) ── */
+/* ── Valid roles (sourced from the single source of truth) ── */
+const VALID_ROLES = Object.keys(ROLE_KEYWORDS);
+
+/* ── Fallback helpers (Phase 2) ── */
 
 const GEMINI_FALLBACK_STATUSES = new Set([429, 500, 502, 503, 504]);
 const NETWORK_ERROR_CODES = new Set([
@@ -63,10 +69,6 @@ function pickArray(primary, fallback = []) {
   return Array.isArray(primary) && primary.length > 0 ? primary : fallback;
 }
 
-/**
- * Tries Gemini extraction, falls back to local regex parser on any
- * transient failure (rate-limit, network, empty response, etc.).
- */
 async function parseResumeWithFallback(rawText) {
   const local = parseResumeText(rawText);
 
@@ -103,7 +105,6 @@ async function parseResumeWithFallback(rawText) {
 
 /**
  * POST /api/resume/upload
- * Accepts multipart PDF, parses it, runs Phase 3 analysis, saves to DB.
  */
 async function uploadResume(req, res, next) {
   try {
@@ -147,7 +148,6 @@ async function uploadResume(req, res, next) {
 
 /**
  * GET /api/resume/me
- * Returns the user's current stored resume (with analysis).
  */
 async function getMyResume(req, res, next) {
   try {
@@ -163,9 +163,12 @@ async function getMyResume(req, res, next) {
 
 /**
  * POST /api/resume/analyze
- * Re-runs the analysis engine on the already-stored resume fields
- * without requiring a re-upload — useful after the user changes
- * their target role in Profile Setup.
+ *
+ * Accepts an optional { role } in the request body.
+ *   - If role is provided and valid  → analyze for that role.
+ *   - If role is missing or invalid  → fall back to the user's saved targetRole.
+ *
+ * The user's profile targetRole is NEVER modified here.
  */
 async function reanalyzeResume(req, res, next) {
   try {
@@ -175,6 +178,14 @@ async function reanalyzeResume(req, res, next) {
         message: "No resume uploaded yet. Upload a resume first.",
       });
     }
+
+    // Use the role from the request body if it is a known role,
+    // otherwise fall back to the user's saved profile role.
+    const requestedRole = req.body?.role?.trim();
+    const roleToUse =
+      requestedRole && VALID_ROLES.includes(requestedRole)
+        ? requestedRole
+        : req.userDoc.targetRole;
 
     const analysis = computeResumeAnalysis(
       {
@@ -187,9 +198,11 @@ async function reanalyzeResume(req, res, next) {
         certifications: resume.certifications,
         rawText: resume.rawText,
       },
-      req.userDoc.targetRole,
+      roleToUse,
     );
 
+    // Save the updated analysis back to the resume document.
+    // weakAreas is also updated to reflect the new role's missing skills.
     resume.analysis = analysis;
     resume.weakAreas = analysis.missingSkills || [];
     await resume.save();
@@ -202,7 +215,6 @@ async function reanalyzeResume(req, res, next) {
 
 /**
  * GET /api/resume/analysis/pdf
- * Streams a PDF version of the stored analysis as a download.
  */
 async function downloadResumeAnalysisPdf(req, res, next) {
   try {
@@ -238,4 +250,5 @@ module.exports = {
   reanalyzeResume,
   shouldFallback,
   uploadResume,
+  VALID_ROLES,
 };
