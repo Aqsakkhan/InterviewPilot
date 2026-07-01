@@ -60,6 +60,24 @@ module.exports = {
   ROLE_TOPICS,
 };
 
+const COMPANY_TOPICS = {
+  Google: ["System Design", "Scalability", "Algorithms"],
+  Microsoft: ["OOP", "System Design", "Problem Solving"],
+  Amazon: ["Leadership Principles", "Scalability", "REST APIs"],
+  Meta: ["Algorithms", "Distributed Systems", "Performance"],
+  Apple: ["Architecture", "Performance", "Debugging"],
+  Netflix: ["Distributed Systems", "Caching", "Performance"],
+  Adobe: ["OOP", "Design Patterns", "Projects"],
+  Oracle: ["SQL", "Database Design", "Transactions"],
+  Salesforce: ["Cloud", "APIs", "Database"],
+  "JP Morgan Chase": ["Java", "Spring Boot", "SQL"],
+  "Goldman Sachs": ["DSA", "Java", "Optimization"],
+  Deloitte: ["OOP", "DBMS", "Communication"],
+  Accenture: ["Projects", "SQL", "OOP"],
+  Infosys: ["OS", "DBMS", "CN"],
+  TCS: ["OOP", "DBMS", "Aptitude"],
+};
+
 function buildInterviewPlan({
   type,
   company,
@@ -68,6 +86,7 @@ function buildInterviewPlan({
   resume,
 }) {
   const topics = ROLE_TOPICS[jobRole] || ROLE_TOPICS["Software Engineer"];
+  const companyTopics = COMPANY_TOPICS[company] || [];
 
   switch (type) {
     case "project_viva":
@@ -164,13 +183,17 @@ function buildInterviewPlan({
         },
         {
           step: 3,
-          topic: topics[1],
-          instruction: `Ask a practical question related to ${topics[1]}.`,
+          topic: companyTopics[0] || topics[1],
+          instruction: `Ask a practical question related to ${
+            companyTopics[0] || topics[1]
+          }.`,
         },
         {
           step: 4,
-          topic: topics[2],
-          instruction: `Ask a deeper follow-up about ${topics[2]}.`,
+          topic: companyTopics[1] || topics[2],
+          instruction: `Ask a deeper follow-up about ${
+            companyTopics[1] || topics[2]
+          }.`,
         },
         {
           step: 5,
