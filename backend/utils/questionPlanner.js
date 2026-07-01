@@ -1,3 +1,65 @@
+const ROLE_TOPICS = {
+  "Software Engineer": [
+    "OOP",
+    "DBMS",
+    "Operating Systems",
+    "Computer Networks",
+    "System Design",
+  ],
+
+  "Frontend Developer": [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "React",
+    "Browser Performance",
+  ],
+
+  "Backend Developer": ["Node.js", "Express", "REST APIs", "MongoDB", "SQL"],
+
+  "Full Stack Developer": [
+    "React",
+    "Node.js",
+    "Express",
+    "MongoDB",
+    "System Design",
+  ],
+
+  "Java Developer": [
+    "Java",
+    "OOP",
+    "Spring Boot",
+    "Collections",
+    "Multithreading",
+  ],
+
+  "Python Developer": ["Python", "Flask", "Django", "REST APIs", "SQL"],
+
+  "Data Analyst": ["SQL", "Python", "Pandas", "Excel", "Power BI"],
+
+  "Data Scientist": [
+    "Machine Learning",
+    "Python",
+    "Statistics",
+    "Deep Learning",
+    "SQL",
+  ],
+
+  "ML Engineer": [
+    "Machine Learning",
+    "Deep Learning",
+    "MLOps",
+    "Python",
+    "Deployment",
+  ],
+
+  "DevOps Engineer": ["Linux", "Docker", "Kubernetes", "CI/CD", "AWS"],
+};
+
+module.exports = {
+  ROLE_TOPICS,
+};
+
 function buildInterviewPlan({
   type,
   company,
@@ -5,6 +67,8 @@ function buildInterviewPlan({
   experienceLevel,
   resume,
 }) {
+  const topics = ROLE_TOPICS[jobRole] || ROLE_TOPICS["Software Engineer"];
+
   switch (type) {
     case "project_viva":
       return [
@@ -91,24 +155,27 @@ function buildInterviewPlan({
           step: 1,
           topic: "project",
           instruction:
-            "Begin with one of the candidate's strongest resume projects. Ask about the overall architecture and purpose.",
+            "Start with one of the candidate's strongest resume projects.",
         },
         {
           step: 2,
-          topic: "technical",
-          instruction:
-            "Ask a technical question related to the candidate's selected job role.",
+          topic: topics[0],
+          instruction: `Ask a question focused on ${topics[0]}.`,
         },
         {
           step: 3,
-          topic: "dsa",
-          instruction: "Ask one medium-level DSA reasoning question.",
+          topic: topics[1],
+          instruction: `Ask a practical question related to ${topics[1]}.`,
         },
         {
           step: 4,
+          topic: topics[2],
+          instruction: `Ask a deeper follow-up about ${topics[2]}.`,
+        },
+        {
+          step: 5,
           topic: "behavioral",
-          instruction:
-            "Ask one behavioral question about teamwork, leadership or communication.",
+          instruction: "Ask one behavioral question.",
         },
       ];
   }
