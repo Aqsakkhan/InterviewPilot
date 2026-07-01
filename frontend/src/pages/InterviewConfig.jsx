@@ -15,6 +15,23 @@ const TYPES = [
 
 const DIFFICULTIES = ["beginner", "intermediate", "advanced"];
 const DURATIONS = [10, 20, 30];
+const COMPANIES = [
+  "Google",
+  "Microsoft",
+  "Amazon",
+  "Meta",
+  "Apple",
+  "Netflix",
+  "Adobe",
+  "Oracle",
+  "Salesforce",
+  "JP Morgan Chase",
+  "Goldman Sachs",
+  "Deloitte",
+  "Accenture",
+  "Infosys",
+  "TCS",
+];
 
 export default function InterviewConfig() {
   const [params] = useSearchParams();
@@ -23,6 +40,7 @@ export default function InterviewConfig() {
   const [type, setType] = useState(params.get("type") || "full_placement");
   const [difficulty, setDifficulty] = useState("intermediate");
   const [durationMinutes, setDurationMinutes] = useState(20);
+  const [company, setCompany] = useState("Google");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
 
@@ -56,9 +74,8 @@ export default function InterviewConfig() {
               <button
                 key={value}
                 onClick={() => setType(value)}
-                className={`focus-ring text-left p-3 rounded-xl border transition-colors ${
-                  type === value ? "border-primary bg-primary/10" : "border-line hover:bg-white/5"
-                }`}
+                className={`focus-ring text-left p-3 rounded-xl border transition-colors ${type === value ? "border-primary bg-primary/10" : "border-line hover:bg-white/5"
+                  }`}
               >
                 <Icon size={16} className={type === value ? "text-primary" : "text-muted"} />
                 <p className="text-sm mt-2">{label}</p>
@@ -66,7 +83,23 @@ export default function InterviewConfig() {
             ))}
           </div>
         </div>
+        <div>
+          <label className="text-sm text-muted mb-2 block">
+            Company
+          </label>
 
+          <select
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            className="focus-ring w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm"
+          >
+            {COMPANIES.map((company) => (
+              <option key={company} value={company}>
+                {company}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="text-sm text-muted mb-2 block">Difficulty</label>
           <div className="grid grid-cols-3 gap-3">
@@ -74,9 +107,8 @@ export default function InterviewConfig() {
               <button
                 key={d}
                 onClick={() => setDifficulty(d)}
-                className={`focus-ring capitalize p-2.5 rounded-xl border text-sm transition-colors ${
-                  difficulty === d ? "border-secondary bg-secondary/10 text-ink" : "border-line text-muted hover:bg-white/5"
-                }`}
+                className={`focus-ring capitalize p-2.5 rounded-xl border text-sm transition-colors ${difficulty === d ? "border-secondary bg-secondary/10 text-ink" : "border-line text-muted hover:bg-white/5"
+                  }`}
               >
                 {d}
               </button>
@@ -91,9 +123,8 @@ export default function InterviewConfig() {
               <button
                 key={d}
                 onClick={() => setDurationMinutes(d)}
-                className={`focus-ring p-2.5 rounded-xl border text-sm transition-colors ${
-                  durationMinutes === d ? "border-accent bg-accent/10 text-ink" : "border-line text-muted hover:bg-white/5"
-                }`}
+                className={`focus-ring p-2.5 rounded-xl border text-sm transition-colors ${durationMinutes === d ? "border-accent bg-accent/10 text-ink" : "border-line text-muted hover:bg-white/5"
+                  }`}
               >
                 {d} min
               </button>

@@ -74,18 +74,27 @@ const resumeExtractionSchema = {
 
 const TYPE_BRIEF = {
   hr: "an HR round focused on background, motivation, strengths/weaknesses, teamwork and leadership stories",
-  technical: "a technical theory round covering OOP, DBMS, OS, Computer Networks and the candidate's listed tech stack",
+  technical:
+    "a technical theory round covering OOP, DBMS, OS, Computer Networks and the candidate's listed tech stack",
   dsa: "a verbal Data Structures & Algorithms round where the candidate must explain approach, complexity and trade-offs out loud (no code editor, just verbal reasoning)",
-  project_viva: "a project viva focused entirely on the candidate's own resume projects - architecture, decisions, challenges and ownership",
-  full_placement: "a full placement-style interview that blends HR, technical theory, DSA reasoning and project viva questions, the way a real campus placement panel would",
+  project_viva:
+    "a project viva focused entirely on the candidate's own resume projects - architecture, decisions, challenges and ownership",
+  full_placement:
+    "a full placement-style interview that blends HR, technical theory, DSA reasoning and project viva questions, the way a real campus placement panel would",
 };
 
-function questionGenerationPrompt({ profile, resume, type, difficulty, history }) {
+function questionGenerationPrompt({
+  profile,
+  resume,
+  type,
+  difficulty,
+  history,
+}) {
   const historyText = history.length
     ? history
         .map(
           (h, i) =>
-            `Q${i + 1} [${h.category}]: ${h.question}\nCandidate's answer: ${h.answer || "(no answer recorded)"}`
+            `Q${i + 1} [${h.category}]: ${h.question}\nCandidate's answer: ${h.answer || "(no answer recorded)"}`,
         )
         .join("\n\n")
     : "(This is the first question - there is no history yet.)";
@@ -143,7 +152,7 @@ function evaluationPrompt({ profile, type, difficulty, qaList }) {
   const transcript = qaList
     .map(
       (qa, i) =>
-        `Q${i + 1} [${qa.category}]: ${qa.question}\nA${i + 1}: ${qa.answer || "(skipped / no answer)"}`
+        `Q${i + 1} [${qa.category}]: ${qa.question}\nA${i + 1}: ${qa.answer || "(skipped / no answer)"}`,
     )
     .join("\n\n");
 
