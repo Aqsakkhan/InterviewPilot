@@ -54,6 +54,13 @@ const JOB_ROLES = [
   "System Engineer",
   "Embedded Software Engineer",
 ];
+
+const EXPERIENCE_LEVELS = [
+  "Fresher",
+  "0-1 Years",
+  "1-3 Years",
+  "3-5 Years",
+];
 export default function InterviewConfig() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -63,6 +70,7 @@ export default function InterviewConfig() {
   const [durationMinutes, setDurationMinutes] = useState(20);
   const [company, setCompany] = useState("Google");
   const [jobRole, setJobRole] = useState("Software Engineer");
+  const [experienceLevel, setExperienceLevel] = useState("Fresher");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
 
@@ -135,6 +143,23 @@ export default function InterviewConfig() {
             {JOB_ROLES.map((role) => (
               <option key={role} value={role}>
                 {role}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-muted mb-2 block">
+            Experience Level
+          </label>
+
+          <select
+            value={experienceLevel}
+            onChange={(e) => setExperienceLevel(e.target.value)}
+            className="focus-ring w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm"
+          >
+            {EXPERIENCE_LEVELS.map((level) => (
+              <option key={level} value={level}>
+                {level}
               </option>
             ))}
           </select>
