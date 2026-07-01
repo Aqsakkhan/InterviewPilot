@@ -1,12 +1,29 @@
+/**
+ * resumeController.js
+ * ─────────────────────────────────────────────────────────────────────────
+ * Handles all resume-related HTTP requests.
+ *
+ * Routes (see resumeRoutes.js):
+ *   POST   /api/resume/upload          — upload + parse + analyze
+ *   GET    /api/resume/me              — fetch current resume
+ *   POST   /api/resume/analyze         — re-run analysis (no re-upload needed)
+ *   GET    /api/resume/analysis/pdf    — download PDF report
+ */
+
 const Resume = require("../models/Resume");
 const { extractResumeData } = require("../services/geminiService");
 const {
   extractTextFromPdf,
   parseResumeText,
 } = require("../services/resumeParserService");
+const { computeResumeAnalysis } = require("../services/resumeAnalysisService");
+const {
+  generateResumeAnalysisPdf,
+} = require("../services/resumeReportService");
+
+/* ── Fallback helpers (preserved from Phase 2) ── */
 
 const GEMINI_FALLBACK_STATUSES = new Set([429, 500, 502, 503, 504]);
-
 const NETWORK_ERROR_CODES = new Set([
   "ECONNABORTED",
   "ECONNRESET",
@@ -30,11 +47,10 @@ function getErrorStatus(err) {
   );
 }
 
-function shouldFallbackToLocalParser(err) {
+function shouldFallback(err) {
   const status = getErrorStatus(err);
   const code = err?.code || err?.cause?.code || "";
   const message = err?.message || "";
-
   return (
     GEMINI_FALLBACK_STATUSES.has(Number(status)) ||
     NETWORK_ERROR_CODES.has(code) ||
@@ -47,59 +63,47 @@ function pickArray(primary, fallback = []) {
   return Array.isArray(primary) && primary.length > 0 ? primary : fallback;
 }
 
-function logGeminiFallback(err, expectedFallback) {
-  console.warn(
-    "[resume] Gemini resume extraction failed; using local parser fallback",
-    {
-      status: getErrorStatus(err),
-      code: err?.code || err?.cause?.code,
-      expectedFallback,
-      message: err?.message,
-    },
-  );
-}
-
+/**
+ * Tries Gemini extraction, falls back to local regex parser on any
+ * transient failure (rate-limit, network, empty response, etc.).
+ */
 async function parseResumeWithFallback(rawText) {
-  const localParsed = parseResumeText(rawText);
+  const local = parseResumeText(rawText);
 
   try {
-    const geminiParsed = await extractResumeData(rawText);
-
+    const gemini = await extractResumeData(rawText);
     return {
       source: "gemini",
       data: {
-        ...localParsed,
-        skills: pickArray(geminiParsed.skills, localParsed.skills),
-        projects: pickArray(geminiParsed.projects, localParsed.projects),
-        experience: pickArray(geminiParsed.internships, localParsed.experience),
-        education: pickArray(geminiParsed.education, localParsed.education),
-        certifications: pickArray(
-          geminiParsed.certifications,
-          localParsed.certifications,
-        ),
-        strongAreas: pickArray(geminiParsed.strongAreas, localParsed.skills),
-        weakAreas: Array.isArray(geminiParsed.weakAreas)
-          ? geminiParsed.weakAreas
-          : [],
+        ...local,
+        skills: pickArray(gemini.skills, local.skills),
+        projects: pickArray(gemini.projects, local.projects),
+        experience: pickArray(gemini.internships, local.experience),
+        education: pickArray(gemini.education, local.education),
+        certifications: pickArray(gemini.certifications, local.certifications),
+        strongAreas: pickArray(gemini.strongAreas, local.skills),
+        weakAreas: Array.isArray(gemini.weakAreas) ? gemini.weakAreas : [],
       },
     };
   } catch (err) {
-    logGeminiFallback(err, shouldFallbackToLocalParser(err));
-
+    console.warn("[resume] Gemini extraction failed — using local parser", {
+      status: getErrorStatus(err),
+      code: err?.code || err?.cause?.code,
+      willFallback: shouldFallback(err),
+      message: err?.message,
+    });
     return {
       source: "local",
-      data: {
-        ...localParsed,
-        strongAreas: localParsed.skills,
-        weakAreas: [],
-      },
+      data: { ...local, strongAreas: local.skills, weakAreas: [] },
     };
   }
 }
 
+/* ── Controllers ── */
+
 /**
  * POST /api/resume/upload
- * multipart/form-data, field name "resume"
+ * Accepts multipart PDF, parses it, runs Phase 3 analysis, saves to DB.
  */
 async function uploadResume(req, res, next) {
   try {
@@ -110,10 +114,8 @@ async function uploadResume(req, res, next) {
     }
 
     const rawText = await extractTextFromPdf(req.file.buffer);
-
-    const parsed = await parseResumeWithFallback(rawText);
-
-    const data = parsed.data;
+    const { data } = await parseResumeWithFallback(rawText);
+    const analysis = computeResumeAnalysis(data, req.userDoc.targetRole);
 
     const resume = await Resume.findOneAndUpdate(
       { user: req.userDoc._id },
@@ -131,12 +133,10 @@ async function uploadResume(req, res, next) {
         education: data.education || [],
         certifications: data.certifications || [],
         strongAreas: data.strongAreas || [],
-        weakAreas: data.weakAreas || [],
+        weakAreas: analysis.missingSkills || [],
+        analysis,
       },
-      {
-        new: true,
-        upsert: true,
-      },
+      { new: true, upsert: true },
     );
 
     res.json(resume);
@@ -147,18 +147,52 @@ async function uploadResume(req, res, next) {
 
 /**
  * GET /api/resume/me
+ * Returns the user's current stored resume (with analysis).
  */
 async function getMyResume(req, res, next) {
   try {
-    const resume = await Resume.findOne({
-      user: req.userDoc._id,
-    });
+    const resume = await Resume.findOne({ user: req.userDoc._id });
+    if (!resume) {
+      return res.status(404).json({ message: "No resume uploaded yet." });
+    }
+    res.json(resume);
+  } catch (err) {
+    next(err);
+  }
+}
 
+/**
+ * POST /api/resume/analyze
+ * Re-runs the analysis engine on the already-stored resume fields
+ * without requiring a re-upload — useful after the user changes
+ * their target role in Profile Setup.
+ */
+async function reanalyzeResume(req, res, next) {
+  try {
+    const resume = await Resume.findOne({ user: req.userDoc._id });
     if (!resume) {
       return res.status(404).json({
-        message: "No resume uploaded yet.",
+        message: "No resume uploaded yet. Upload a resume first.",
       });
     }
+
+    const analysis = computeResumeAnalysis(
+      {
+        email: resume.email,
+        phone: resume.phone,
+        skills: resume.skills,
+        projects: resume.projects,
+        experience: resume.experience,
+        education: resume.education,
+        certifications: resume.certifications,
+        rawText: resume.rawText,
+      },
+      req.userDoc.targetRole,
+    );
+
+    resume.analysis = analysis;
+    resume.weakAreas = analysis.missingSkills || [];
+    await resume.save();
 
     res.json(resume);
   } catch (err) {
@@ -166,9 +200,42 @@ async function getMyResume(req, res, next) {
   }
 }
 
+/**
+ * GET /api/resume/analysis/pdf
+ * Streams a PDF version of the stored analysis as a download.
+ */
+async function downloadResumeAnalysisPdf(req, res, next) {
+  try {
+    const resume = await Resume.findOne({ user: req.userDoc._id });
+
+    if (!resume) {
+      return res.status(404).json({ message: "No resume uploaded yet." });
+    }
+    if (!resume.analysis) {
+      return res.status(404).json({
+        message:
+          "Resume has not been analyzed yet. Re-upload or call POST /api/resume/analyze.",
+      });
+    }
+
+    const pdfBuffer = await generateResumeAnalysisPdf(resume, req.userDoc);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="resume-analysis-${req.userDoc._id}.pdf"`,
+    );
+    res.send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
+  downloadResumeAnalysisPdf,
   getMyResume,
   parseResumeWithFallback,
-  shouldFallbackToLocalParser,
+  reanalyzeResume,
+  shouldFallback,
   uploadResume,
 };
