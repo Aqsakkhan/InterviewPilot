@@ -45,7 +45,13 @@ async function createInterview(req, res, next) {
 
     const resume = await loadResumeContext(req.userDoc._id);
     const targetQuestionCount = calcTargetQuestionCount(durationMinutes);
-    const interviewPlan = buildInterviewPlan(type);
+    const interviewPlan = buildInterviewPlan({
+      type,
+      company,
+      jobRole,
+      experienceLevel,
+      resume,
+    });
     const currentPlan = interviewPlan[0];
 
     const first = await generateNextQuestion({

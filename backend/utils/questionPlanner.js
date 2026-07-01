@@ -1,4 +1,10 @@
-function buildInterviewPlan(type) {
+function buildInterviewPlan({
+  type,
+  company,
+  jobRole,
+  experienceLevel,
+  resume,
+}) {
   switch (type) {
     case "project_viva":
       return [
