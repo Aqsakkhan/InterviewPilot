@@ -1,7 +1,7 @@
 const { Type } = require("@google/genai");
 const { COMPANY_GUIDES } = require("./interviewBlueprints");
 const { ROLE_BLUEPRINTS } = require("./roleBlueprints");
-
+const { EXPERIENCE_BLUEPRINTS } = require("./experienceBlueprints");
 /* ----------------------------------------------------------------------- */
 /* Resume extraction                                                        */
 /* ----------------------------------------------------------------------- */
@@ -101,6 +101,10 @@ function questionGenerationPrompt({
   const roleGuide =
     ROLE_BLUEPRINTS[jobRole]?.focus.join(", ") ||
     "General software engineering concepts";
+  const experienceGuide = EXPERIENCE_BLUEPRINTS[experienceLevel] || {
+    focus: ["General software engineering"],
+    difficulty: "Keep the interview balanced.",
+  };
   const historyText = history.length
     ? history
         .map(
@@ -116,6 +120,8 @@ Difficulty level: ${difficulty}.
 Target Company: ${company}
 Target Job Role: ${jobRole}
 Role Focus: ${roleGuide}
+Experience Focus: ${experienceGuide.focus.join(", ")}
+Interview Depth: ${experienceGuide.difficulty}
 Candidate Experience Level: ${experienceLevel}
 
 ==============================
