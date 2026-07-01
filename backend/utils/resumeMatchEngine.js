@@ -111,10 +111,6 @@ const COMPANY_SKILLS = {
   "Goldman Sachs": ["Java", "DSA", "SQL", "Problem Solving"],
 };
 
-function calculateOverallScore(resume) {
-  return 0;
-}
-
 function matchSkills(resumeSkills, requiredSkills) {
   if (!requiredSkills.length) {
     return {
@@ -160,18 +156,38 @@ function calculateCompanyMatch(resume, company) {
   return matchSkills(resume.skills || [], requiredSkills);
 }
 
+function calculateOverallScore(resume, company, jobRole) {
+  const roleMatch = calculateRoleMatch(resume, jobRole);
+  const companyMatch = calculateCompanyMatch(resume, company);
+
+  const score = Math.round(roleMatch.score * 0.6 + companyMatch.score * 0.4);
+
+  return {
+    score,
+    roleMatch,
+    companyMatch,
+  };
+}
+
 function findMissingSkills(resume, company, jobRole) {
-  return [];
+  const roleMatch = calculateRoleMatch(resume, jobRole);
+  const companyMatch = calculateCompanyMatch(resume, company);
+
+  return [...new Set([...roleMatch.missing, ...companyMatch.missing])];
 }
 
 function findMissingKeywords(resume, company, jobRole) {
-  return [];
+  return findMissingSkills(resume, company, jobRole);
 }
 
 function generateSuggestions(resume, company, jobRole) {
-  return [];
-}
+  const missing = findMissingSkills(resume, company, jobRole);
 
+  return missing.slice(0, 5).map((skill) => ({
+    title: `Improve ${skill}`,
+    description: `Add projects or experience related to ${skill} if you have worked with it.`,
+  }));
+}
 module.exports = {
   calculateOverallScore,
   calculateCompanyMatch,
