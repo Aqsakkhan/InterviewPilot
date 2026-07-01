@@ -125,12 +125,19 @@ export default function InterviewSession() {
       <div className="flex flex-col items-center gap-5 mb-8">
         <InterviewerOrb state={orbState} size={140} />
         {currentQuestion && (
-          <span
-            className={`text-xs font-mono uppercase tracking-wide border rounded-full px-2.5 py-1 ${CATEGORY_STYLE[currentQuestion.category] || CATEGORY_STYLE.general
-              }`}
-          >
-            {currentQuestion.category}
-          </span>
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs font-mono uppercase tracking-wide border rounded-full px-2.5 py-1 ${CATEGORY_STYLE[currentQuestion.category] || CATEGORY_STYLE.general
+                }`}
+            >
+              {currentQuestion.category}
+            </span>
+            {currentQuestion.isFollowUp && (
+              <span className="text-xs font-mono uppercase tracking-wide border border-accent/30 text-accent bg-accent/5 rounded-full px-2.5 py-1">
+                Follow-up
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -153,8 +160,8 @@ export default function InterviewSession() {
               <button
                 onClick={toggleMic}
                 className={`focus-ring flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${speechRec.isListening
-                    ? "border-accent text-accent bg-accent/10"
-                    : "border-line text-muted hover:bg-white/5"
+                  ? "border-accent text-accent bg-accent/10"
+                  : "border-line text-muted hover:bg-white/5"
                   }`}
               >
                 {speechRec.isListening ? <Square size={12} /> : <Mic size={12} />}

@@ -77,7 +77,14 @@ async function createInterview(req, res, next) {
       experienceLevel,
       targetQuestionCount,
       plan: interviewPlan,
-      qa: [{ question: first.question, category: first.category, answer: "" }],
+      qa: [
+        {
+          question: first.question,
+          category: first.category,
+          isFollowUp: false, // always false - nothing to follow up on yet
+          answer: "",
+        },
+      ],
       currentIndex: 0,
       status: "in_progress",
     });
@@ -161,6 +168,7 @@ async function submitAnswer(req, res, next) {
     interview.qa.push({
       question: next_.question,
       category: next_.category,
+      isFollowUp: !!next_.isFollowUp,
       answer: "",
     });
     interview.currentIndex = interview.qa.length - 1;

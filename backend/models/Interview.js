@@ -5,6 +5,7 @@ const qaSchema = new mongoose.Schema(
     question: { type: String, required: true },
     category: { type: String, default: "general" }, // e.g. dsa, hr, project, theory
     answer: { type: String, default: "" },
+    isFollowUp: { type: Boolean, default: false }, // true if this question probes deeper into the previous answer
     askedAt: { type: Date, default: Date.now },
     answeredAt: { type: Date },
   },

@@ -110,7 +110,7 @@ function questionGenerationPrompt({
     ? history
         .map(
           (h, i) =>
-            `Q${i + 1} [${h.category}]: ${h.question}\nCandidate's answer: ${h.answer || "(no answer recorded)"}`,
+            `Q${i + 1} [${h.category}]${h.isFollowUp ? " (follow-up)" : ""}: ${h.question}\nCandidate's answer: ${h.answer || "(no answer recorded)"}`,
         )
         .join("\n\n")
     : "(This is the first question - there is no history yet.)";
@@ -146,7 +146,8 @@ Internships: ${(resume.internships || []).map((i) => `${i.role} at ${i.company}`
 Strong areas: ${(resume.strongAreas || []).join(", ") || "Unknown"}
 Weak areas: ${(resume.weakAreas || []).join(", ") || "Unknown"}
 
-CURRENT INTERVIEW STAGE
+CURRENT INTERVIEW STAGE (planned topic - use only if you decide below
+that this should NOT be a follow-up)
 
 Topic:
 ${plan?.topic || "General"}
@@ -157,6 +158,29 @@ ${plan?.instruction || "Ask a balanced interview question."}
 INTERVIEW SO FAR
 ${historyText}
 
+FOLLOW-UP DECISION (decide this first, before anything else)
+
+Look at the candidate's most recent answer above and decide whether to
+ask a follow-up (isFollowUp: true) or move to the planned topic above
+(isFollowUp: false).
+
+Ask a follow-up when the last answer:
+- named a specific technology, tool, or design decision worth probing
+  (e.g. candidate says "I used React and Node.js" -> ask "Why did you
+  choose Node.js?", "What challenge did you face?", or "How would you
+  scale it?")
+- was vague, generic, or surface-level and needs more depth
+- left an obvious gap - a challenge mentioned but not explained, a
+  trade-off not discussed, a claim not justified
+- naturally invites a "why", "how", or "what would you do differently"
+
+Move to the planned topic instead when:
+- the last answer was already detailed and complete
+- this is the first question of the interview (always isFollowUp: false)
+- the candidate has already been followed up on this same topic twice
+  in a row (check the history above) - move on even if there's more
+  to probe, so the interview doesn't get stuck
+
 YOUR TASK
 
 You are interviewing this candidate exactly as an interviewer from
@@ -164,11 +188,11 @@ ${company} hiring a ${jobRole} would.
 
 Adjust the interview style based on:
 
-• Company
-• Job Role
-• Candidate Experience Level
-• Resume
-• Previous answers
+- Company
+- Job Role
+- Candidate Experience Level
+- Resume
+- Previous answers
 
 Examples:
 
@@ -182,7 +206,7 @@ Examples:
 - Product companies → deeper technical discussions
 - Service companies → implementation and fundamentals
 
-Question selection priority:
+Question selection priority (when NOT asking a follow-up):
 
 1. Resume Projects
 2. Internship Experience
@@ -190,9 +214,6 @@ Question selection priority:
 4. Company Expectations
 5. Strong Areas
 6. Weak Areas
-
-If the previous answer was weak,
-ask a follow-up instead of changing the topic.
 
 Only ask ONE natural interview question.
 
@@ -211,8 +232,13 @@ const questionGenerationSchema = {
       type: Type.STRING,
       enum: ["dsa", "hr", "project", "theory", "general"],
     },
+    isFollowUp: {
+      type: Type.BOOLEAN,
+      description:
+        "true if this question probes deeper into the candidate's previous answer rather than starting a new topic",
+    },
   },
-  required: ["question", "category"],
+  required: ["question", "category", "isFollowUp"],
 };
 
 /* ----------------------------------------------------------------------- */
