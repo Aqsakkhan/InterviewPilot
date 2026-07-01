@@ -28,6 +28,35 @@ const educationSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const skillCategoriesSchema = new mongoose.Schema(
+  {
+    languages: [String],
+    frameworks: [String],
+    databases: [String],
+    cloudDevops: [String],
+    tools: [String],
+    other: [String],
+  },
+  { _id: false },
+);
+
+const analysisSchema = new mongoose.Schema(
+  {
+    atsScore: { type: Number, min: 0, max: 100 },
+    strengthScore: { type: Number, min: 0, max: 100 },
+    experienceLevel: String,
+    skillCategories: skillCategoriesSchema,
+    softSkillsDetected: [String],
+    matchedKeywords: [String],
+    missingSkills: [String],
+    suggestions: [String],
+    improvementTips: [String],
+    targetRole: String,
+    analyzedAt: Date,
+  },
+  { _id: false },
+);
+
 const resumeSchema = new mongoose.Schema(
   {
     user: {
@@ -53,6 +82,8 @@ const resumeSchema = new mongoose.Schema(
 
     strongAreas: [String],
     weakAreas: [String],
+
+    analysis: analysisSchema,
   },
   { timestamps: true },
 );
