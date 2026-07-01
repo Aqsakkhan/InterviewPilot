@@ -6,9 +6,6 @@ import {
   ArrowRight,
   CheckCircle2,
   RefreshCcw,
-  Download,
-  Sparkles,
-  Lightbulb,
 } from "lucide-react";
 import client from "../api/client";
 import GlassCard from "../components/GlassCard";
@@ -31,8 +28,6 @@ export default function ResumeUpload() {
   const [resume, setResume] = useState(null);
   const [loadingExisting, setLoadingExisting] = useState(true);
   const [uploading, setUploading] = useState(false);
-  const [reanalyzing, setReanalyzing] = useState(false);
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [error, setError] = useState("");
   const [fileName, setFileName] = useState("");
   const [uploadStage, setUploadStage] = useState("");
@@ -108,40 +103,6 @@ export default function ResumeUpload() {
     }
   };
 
-  const handleReanalyze = async () => {
-    setReanalyzing(true);
-    setError("");
-    try {
-      const { data } = await client.post("/resume/analyze");
-      setResume(data);
-    } catch (err) {
-      setError(err.response?.data?.message || "Couldn't re-analyze your resume.");
-    } finally {
-      setReanalyzing(false);
-    }
-  };
-
-  const handleDownloadPdf = async () => {
-    setDownloadingPdf(true);
-    setError("");
-    try {
-      const response = await client.get("/resume/analysis/pdf", { responseType: "blob" });
-      const blobUrl = window.URL.createObjectURL(
-        new Blob([response.data], { type: "application/pdf" })
-      );
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = "resume-analysis.pdf";
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(blobUrl);
-    } catch {
-      setError("Couldn't generate the analysis PDF. Try re-analyzing first.");
-    } finally {
-      setDownloadingPdf(false);
-    }
-  };
 
   if (loadingExisting) {
     return (
@@ -151,7 +112,6 @@ export default function ResumeUpload() {
     );
   }
 
-  const analysis = resume?.analysis;
 
   return (
     <div className="min-h-screen flex flex-col items-center px-6 py-12 gap-6">
@@ -288,102 +248,7 @@ export default function ResumeUpload() {
         )}
       </GlassCard>
 
-      {/* ── Phase 3: Resume Intelligence Dashboard ── */}
-      {analysis && (
-        <GlassCard strong className="w-full max-w-3xl p-8">
-          <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
-            <div className="flex items-center gap-2">
-              <Sparkles size={18} className="text-accent" />
-              <h2 className="font-display text-lg font-semibold">Resume Intelligence</h2>
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleReanalyze}
-                disabled={reanalyzing}
-                className="focus-ring inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-line text-ink text-xs hover:bg-white/5 transition-colors disabled:opacity-60"
-              >
-                <RefreshCcw size={12} />
-                {reanalyzing ? "Re-analyzing..." : "Re-analyze"}
-              </button>
-              <button
-                onClick={handleDownloadPdf}
-                disabled={downloadingPdf}
-                className="focus-ring inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-primary text-white text-xs hover:bg-primary-dim transition-colors disabled:opacity-60"
-              >
-                <Download size={12} />
-                {downloadingPdf ? "Preparing..." : "Download PDF"}
-              </button>
-            </div>
-          </div>
 
-          {/* Score rings */}
-          <div className="flex flex-wrap items-center gap-8 mb-8">
-            <ScoreRing score={analysis.atsScore} size={110} label="ATS Score" />
-            <ScoreRing score={analysis.strengthScore} size={110} label="Resume Strength" />
-            <div>
-              <span className="text-xs font-mono uppercase tracking-wide text-muted">
-                Experience Level
-              </span>
-              <p className="text-ink font-medium mt-1">{analysis.experienceLevel}</p>
-              <span className="text-xs font-mono uppercase tracking-wide text-muted mt-3 block">
-                Analyzed for
-              </span>
-              <p className="text-ink font-medium mt-1">{analysis.targetRole}</p>
-            </div>
-          </div>
-
-          {/* Skill categories */}
-          <div className="grid sm:grid-cols-2 gap-5 mb-8">
-            {Object.entries(SKILL_CATEGORY_LABELS).map(([key, label]) => (
-              <SkillCategoryCard
-                key={key}
-                title={label}
-                items={analysis.skillCategories?.[key] || []}
-              />
-            ))}
-            <SkillCategoryCard
-              title="Soft Skills Detected"
-              items={analysis.softSkillsDetected || []}
-              tone="accent"
-              emptyText="None detected from resume text."
-            />
-          </div>
-
-          {/* Keyword match */}
-          <div className="grid sm:grid-cols-2 gap-5 mb-8">
-            <SkillCategoryCard
-              title={`Matched Keywords (${analysis.targetRole})`}
-              items={analysis.matchedKeywords || []}
-              tone="success"
-              emptyText="No role keywords matched yet."
-            />
-            <SkillCategoryCard
-              title="Missing Skills to Consider"
-              items={analysis.missingSkills || []}
-              tone="warning"
-              emptyText="Nothing missing — great keyword coverage!"
-            />
-          </div>
-
-          {/* Improvement tips */}
-          <div>
-            <h3 className="flex items-center gap-2 text-xs font-mono uppercase tracking-wide text-muted mb-3">
-              <Lightbulb size={14} /> Improvement Tips
-            </h3>
-            <ul className="space-y-2 text-sm text-ink">
-              {(analysis.improvementTips || []).length ? (
-                analysis.improvementTips.map((tip, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="text-accent shrink-0">!</span> {tip}
-                  </li>
-                ))
-              ) : (
-                <li className="text-muted">No high-priority issues detected.</li>
-              )}
-            </ul>
-          </div>
-        </GlassCard>
-      )}
     </div>
   );
 }

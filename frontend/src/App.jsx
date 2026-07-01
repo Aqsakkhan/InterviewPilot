@@ -8,6 +8,7 @@ import ProfileSetup from "./pages/ProfileSetup";
 import Profile from "./pages/Profile";
 import ResumeUpload from "./pages/ResumeUpload";
 import Dashboard from "./pages/Dashboard";
+import ResumeReport from "./pages/ResumeReport";
 import InterviewConfig from "./pages/InterviewConfig";
 import InterviewSession from "./pages/InterviewSession";
 import PerformanceReport from "./pages/PerformanceReport";
@@ -35,6 +36,14 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <ResumeUpload />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/resume-report"
+            element={
+              <ProtectedRoute>
+                <ResumeReport />
               </ProtectedRoute>
             }
           />
