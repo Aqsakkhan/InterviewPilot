@@ -4,6 +4,7 @@ const {
   generateNextQuestion,
   evaluateInterview,
 } = require("../services/geminiService");
+const { buildInterviewPlan } = require("../utils/interviewPlanner");
 
 function calcTargetQuestionCount(durationMinutes) {
   // Roughly one question (with its follow-up exchange) every ~2.5 minutes.
@@ -44,6 +45,7 @@ async function createInterview(req, res, next) {
 
     const resume = await loadResumeContext(req.userDoc._id);
     const targetQuestionCount = calcTargetQuestionCount(durationMinutes);
+    const interviewPlan = buildInterviewPlan(type);
 
     const first = await generateNextQuestion({
       profile: req.userDoc,
@@ -65,6 +67,7 @@ async function createInterview(req, res, next) {
       jobRole,
       experienceLevel,
       targetQuestionCount,
+      plan: interviewPlan,
       qa: [{ question: first.question, category: first.category, answer: "" }],
       currentIndex: 0,
       status: "in_progress",

@@ -133,6 +133,7 @@ async function generateNextQuestion({
   company,
   jobRole,
   experienceLevel,
+  plan,
   history,
 }) {
   return generateJSON(

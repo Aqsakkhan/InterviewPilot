@@ -42,6 +42,18 @@ const interviewSchema = new mongoose.Schema(
     },
     durationMinutes: { type: Number, default: 20 },
     targetQuestionCount: { type: Number, default: 8 },
+
+    plan: {
+      type: [
+        {
+          step: Number,
+          topic: String,
+          instruction: String,
+        },
+      ],
+      default: [],
+    },
+
     company: {
       type: String,
       default: "Google",
