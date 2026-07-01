@@ -1,43 +1,44 @@
+/**
+ * resumeRoutes.js
+ * ─────────────────────────────────────────────────────────────────────────
+ * All routes are auth-gated (requireAuth + requireProfile).
+ *
+ * POST   /api/resume/upload          upload PDF → parse → analyze → save
+ * GET    /api/resume/me              fetch current resume + analysis
+ * POST   /api/resume/analyze         re-run analysis without re-uploading
+ * GET    /api/resume/analysis/pdf    download PDF analysis report
+ */
+
 const express = require("express");
 const multer = require("multer");
 
-const authMiddleware = require("../middleware/authMiddleware");
-const resumeController = require("../controllers/resumeController");
+const { requireAuth, requireProfile } = require("../middleware/authMiddleware");
+const {
+  downloadResumeAnalysisPdf,
+  getMyResume,
+  reanalyzeResume,
+  uploadResume,
+} = require("../controllers/resumeController");
 
 const router = express.Router();
 
-function getRouteHandler(source, name) {
-  const handler = source[name];
-
-  if (typeof handler !== "function") {
-    throw new TypeError(`Resume route handler '${name}' must be a function.`);
-  }
-
-  return handler;
-}
-
-const requireAuth = getRouteHandler(authMiddleware, "requireAuth");
-
-const requireProfile = getRouteHandler(authMiddleware, "requireProfile");
-
-const uploadResume = getRouteHandler(resumeController, "uploadResume");
-
-const getMyResume = getRouteHandler(resumeController, "getMyResume");
-
+/* ── Multer: in-memory, PDF only, 8 MB cap ── */
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 8 * 1024 * 1024,
-  },
-  fileFilter: (req, file, cb) => {
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
     if (file.mimetype !== "application/pdf") {
-      return cb(new Error("Only PDF resumes are supported."));
+      return cb(
+        Object.assign(new Error("Only PDF resumes are supported."), {
+          statusCode: 400,
+        }),
+      );
     }
-
     cb(null, true);
   },
 });
 
+/* ── Routes ── */
 router.post(
   "/upload",
   requireAuth,
@@ -47,5 +48,14 @@ router.post(
 );
 
 router.get("/me", requireAuth, requireProfile, getMyResume);
+
+router.post("/analyze", requireAuth, requireProfile, reanalyzeResume);
+
+router.get(
+  "/analysis/pdf",
+  requireAuth,
+  requireProfile,
+  downloadResumeAnalysisPdf,
+);
 
 module.exports = router;
