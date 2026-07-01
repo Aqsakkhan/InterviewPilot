@@ -56,10 +56,6 @@ const ROLE_TOPICS = {
   "DevOps Engineer": ["Linux", "Docker", "Kubernetes", "CI/CD", "AWS"],
 };
 
-module.exports = {
-  ROLE_TOPICS,
-};
-
 const COMPANY_TOPICS = {
   Google: ["System Design", "Scalability", "Algorithms"],
   Microsoft: ["OOP", "System Design", "Problem Solving"],
@@ -78,16 +74,72 @@ const COMPANY_TOPICS = {
   TCS: ["OOP", "DBMS", "Aptitude"],
 };
 
+/**
+ * Extends a short base plan out to `targetLength` steps by cycling through
+ * a pool of topics (role topics, company topics, resume weak areas) instead
+ * of letting the interview controller repeat the final base step forever.
+ * Alternates between introducing a new topic and asking a deeper follow-up
+ * on it, so longer interviews still feel progressive rather than repetitive.
+ */
+function extendPlan(baseSteps, targetLength, topicPool) {
+  if (baseSteps.length >= targetLength) return baseSteps;
+
+  const usedTopics = new Set(baseSteps.map((s) => s.topic));
+  const pool = topicPool.filter(Boolean);
+  const uniquePool = [...new Set(pool)];
+  // Prefer topics not already covered by the base plan; if we run out,
+  // cycle back through the full pool so we still vary the wording.
+  const rotation = uniquePool.filter((t) => !usedTopics.has(t));
+  const fallbackRotation = uniquePool.length ? uniquePool : ["general"];
+
+  const steps = [...baseSteps];
+  let cursor = 0;
+
+  while (steps.length < targetLength) {
+    const source = rotation.length ? rotation : fallbackRotation;
+    const topic = source[cursor % source.length];
+    const isFollowUp = steps.length % 2 === 1;
+    cursor += 1;
+
+    steps.push({
+      step: steps.length + 1,
+      topic,
+      instruction: isFollowUp
+        ? `Ask a deeper follow-up question that builds on the candidate's previous answer, staying related to ${topic}.`
+        : `Move on to a new question focused on ${topic}.`,
+    });
+  }
+
+  return steps;
+}
+
 function buildInterviewPlan({
   type,
   company,
   jobRole,
   experienceLevel,
   resume,
+  targetQuestionCount,
 }) {
   const topics = ROLE_TOPICS[jobRole] || ROLE_TOPICS["Software Engineer"];
   const companyTopics = COMPANY_TOPICS[company] || [];
+  const weakAreas = resume?.weakAreas || [];
+  const topicPool = [...topics, ...companyTopics, ...weakAreas];
 
+  const basePlan = buildBasePlan({
+    type,
+    company,
+    jobRole,
+    topics,
+    companyTopics,
+  });
+
+  if (!targetQuestionCount) return basePlan;
+
+  return extendPlan(basePlan, targetQuestionCount, topicPool);
+}
+
+function buildBasePlan({ type, topics, companyTopics }) {
   switch (type) {
     case "project_viva":
       return [

@@ -51,6 +51,7 @@ async function createInterview(req, res, next) {
       jobRole,
       experienceLevel,
       resume,
+      targetQuestionCount,
     });
     const currentPlan = interviewPlan[0];
 
@@ -130,10 +131,14 @@ async function submitAnswer(req, res, next) {
     interview.qa[idx].answer = answer || "";
     interview.qa[idx].answeredAt = new Date();
 
+    // Persist the answer immediately. If the next Gemini call below fails,
+    // the candidate's answer is already safe on reload instead of being
+    // silently lost.
+    await interview.save();
+
     const reachedTarget = interview.qa.length >= interview.targetQuestionCount;
 
     if (reachedTarget) {
-      await interview.save();
       const finished = await finalizeInterview(interview, req.userDoc);
       return res.json({ interview: finished, isComplete: true });
     }
