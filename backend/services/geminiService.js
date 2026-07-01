@@ -130,6 +130,9 @@ async function generateNextQuestion({
   resume,
   type,
   difficulty,
+  company,
+  jobRole,
+  experienceLevel,
   history,
 }) {
   return generateJSON(
@@ -139,6 +142,9 @@ async function generateNextQuestion({
       resume,
       type,
       difficulty,
+      company,
+      jobRole,
+      experienceLevel,
       history,
     }),
     prompts.questionGenerationSchema,

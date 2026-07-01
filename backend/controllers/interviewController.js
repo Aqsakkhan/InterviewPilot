@@ -50,6 +50,9 @@ async function createInterview(req, res, next) {
       resume,
       type,
       difficulty,
+      company,
+      jobRole,
+      experienceLevel,
       history: [],
     });
 
@@ -130,9 +133,11 @@ async function submitAnswer(req, res, next) {
       resume,
       type: interview.type,
       difficulty: interview.difficulty,
+      company: interview.company,
+      jobRole: interview.jobRole,
+      experienceLevel: interview.experienceLevel,
       history: interview.qa,
     });
-
     interview.qa.push({
       question: next_.question,
       category: next_.category,
