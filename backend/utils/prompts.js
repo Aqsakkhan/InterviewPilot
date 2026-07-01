@@ -1,5 +1,6 @@
 const { Type } = require("@google/genai");
 const { COMPANY_GUIDES } = require("./interviewBlueprints");
+const { ROLE_BLUEPRINTS } = require("./roleBlueprints");
 
 /* ----------------------------------------------------------------------- */
 /* Resume extraction                                                        */
@@ -97,6 +98,9 @@ function questionGenerationPrompt({
   const companyGuide =
     COMPANY_GUIDES[company] ||
     "Conduct a balanced software engineering interview.";
+  const roleGuide =
+    ROLE_BLUEPRINTS[jobRole]?.focus.join(", ") ||
+    "General software engineering concepts";
   const historyText = history.length
     ? history
         .map(
@@ -111,6 +115,7 @@ running ${TYPE_BRIEF[type] || TYPE_BRIEF.full_placement}.
 Difficulty level: ${difficulty}.
 Target Company: ${company}
 Target Job Role: ${jobRole}
+Role Focus: ${roleGuide}
 Candidate Experience Level: ${experienceLevel}
 
 ==============================
