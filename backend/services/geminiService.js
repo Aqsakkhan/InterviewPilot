@@ -146,6 +146,7 @@ async function generateNextQuestion({
       company,
       jobRole,
       experienceLevel,
+      plan,
       history,
     }),
     prompts.questionGenerationSchema,
