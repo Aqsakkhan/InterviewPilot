@@ -32,7 +32,28 @@ const COMPANIES = [
   "Infosys",
   "TCS",
 ];
-
+const JOB_ROLES = [
+  "Software Engineer",
+  "Frontend Developer",
+  "Backend Developer",
+  "Full Stack Developer",
+  "Java Developer",
+  "Python Developer",
+  "React Developer",
+  "Node.js Developer",
+  "Android Developer",
+  "Flutter Developer",
+  "AI / ML Engineer",
+  "Data Analyst",
+  "Data Engineer",
+  "DevOps Engineer",
+  "Cloud Engineer",
+  "Cybersecurity Engineer",
+  "QA Engineer (SDET)",
+  "Product Engineer",
+  "System Engineer",
+  "Embedded Software Engineer",
+];
 export default function InterviewConfig() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
@@ -41,6 +62,7 @@ export default function InterviewConfig() {
   const [difficulty, setDifficulty] = useState("intermediate");
   const [durationMinutes, setDurationMinutes] = useState(20);
   const [company, setCompany] = useState("Google");
+  const [jobRole, setJobRole] = useState("Software Engineer");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState("");
 
@@ -96,6 +118,23 @@ export default function InterviewConfig() {
             {COMPANIES.map((company) => (
               <option key={company} value={company}>
                 {company}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-sm text-muted mb-2 block">
+            Job Role
+          </label>
+
+          <select
+            value={jobRole}
+            onChange={(e) => setJobRole(e.target.value)}
+            className="focus-ring w-full rounded-xl border border-line bg-surface px-4 py-3 text-sm"
+          >
+            {JOB_ROLES.map((role) => (
+              <option key={role} value={role}>
+                {role}
               </option>
             ))}
           </select>
