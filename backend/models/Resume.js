@@ -52,6 +52,23 @@ const analysisSchema = new mongoose.Schema(
     suggestions: [String],
     improvementTips: [String],
     targetRole: String,
+    targetCompany: String,
+
+    roleMatchScore: {
+      type: Number,
+      min: 0,
+      max: 100,
+    },
+
+    companyMatchScore: {
+      type: Number,
+      min: 0,
+      max: 100,
+    },
+
+    matchedRoleSkills: [String],
+
+    matchedCompanySkills: [String],
     analyzedAt: Date,
   },
   { _id: false },
