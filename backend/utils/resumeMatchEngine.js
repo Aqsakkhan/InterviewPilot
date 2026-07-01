@@ -10,23 +10,16 @@
  * - Resume Suggestions
  */
 
-function calculateOverallScore(resume) {
-  return 0;
-}
-
-function calculateCompanyMatch(resume, company) {
-  return 0;
-}
 const ROLE_SKILLS = {
   "Software Engineer": [
     "Java",
     "Python",
     "JavaScript",
+    "DSA",
     "OOP",
     "DBMS",
     "Operating Systems",
     "Computer Networks",
-    "DSA",
   ],
 
   "Frontend Developer": [
@@ -61,9 +54,9 @@ const ROLE_SKILLS = {
     "Java",
     "Spring Boot",
     "Hibernate",
+    "Collections",
     "SQL",
     "OOP",
-    "Collections",
   ],
 
   "Python Developer": ["Python", "Django", "Flask", "REST API", "SQL"],
@@ -77,8 +70,94 @@ const ROLE_SKILLS = {
     "LLMs",
   ],
 };
-function calculateRoleMatch(resume, jobRole) {
+
+const COMPANY_SKILLS = {
+  Google: [
+    "DSA",
+    "Algorithms",
+    "System Design",
+    "Scalability",
+    "Problem Solving",
+  ],
+
+  Amazon: [
+    "Leadership",
+    "REST API",
+    "Scalability",
+    "Microservices",
+    "Ownership",
+  ],
+
+  Microsoft: ["OOP", "Problem Solving", "System Design", "Azure"],
+
+  Meta: ["React", "Performance", "JavaScript", "Distributed Systems"],
+
+  Apple: ["Swift", "Architecture", "Performance", "Debugging"],
+
+  Netflix: ["Distributed Systems", "Caching", "Performance", "AWS"],
+
+  Oracle: ["SQL", "Database", "Java", "PL/SQL"],
+
+  Deloitte: ["Java", "SQL", "OOP", "Communication"],
+
+  Accenture: ["SQL", "OOP", "Projects", "Communication"],
+
+  Infosys: ["DBMS", "Operating Systems", "Computer Networks", "OOP"],
+
+  TCS: ["DBMS", "OOP", "Computer Networks", "SQL"],
+
+  "JP Morgan Chase": ["Java", "Spring Boot", "SQL", "REST API"],
+
+  "Goldman Sachs": ["Java", "DSA", "SQL", "Problem Solving"],
+};
+
+function calculateOverallScore(resume) {
   return 0;
+}
+
+function matchSkills(resumeSkills, requiredSkills) {
+  if (!requiredSkills.length) {
+    return {
+      score: 0,
+      matched: [],
+      missing: [],
+    };
+  }
+
+  const normalizedResumeSkills = resumeSkills.map((skill) =>
+    skill.toLowerCase(),
+  );
+
+  const matched = [];
+  const missing = [];
+
+  requiredSkills.forEach((skill) => {
+    if (normalizedResumeSkills.includes(skill.toLowerCase())) {
+      matched.push(skill);
+    } else {
+      missing.push(skill);
+    }
+  });
+
+  const score = Math.round((matched.length / requiredSkills.length) * 100);
+
+  return {
+    score,
+    matched,
+    missing,
+  };
+}
+
+function calculateRoleMatch(resume, jobRole) {
+  const requiredSkills = ROLE_SKILLS[jobRole] || [];
+
+  return matchSkills(resume.skills || [], requiredSkills);
+}
+
+function calculateCompanyMatch(resume, company) {
+  const requiredSkills = COMPANY_SKILLS[company] || [];
+
+  return matchSkills(resume.skills || [], requiredSkills);
 }
 
 function findMissingSkills(resume, company, jobRole) {
