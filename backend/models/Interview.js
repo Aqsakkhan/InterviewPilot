@@ -8,7 +8,7 @@ const qaSchema = new mongoose.Schema(
     askedAt: { type: Date, default: Date.now },
     answeredAt: { type: Date },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const evaluationSchema = new mongoose.Schema(
@@ -23,7 +23,7 @@ const evaluationSchema = new mongoose.Schema(
     improvements: [String],
     summary: { type: String, default: "" },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const interviewSchema = new mongoose.Schema(
@@ -42,16 +42,34 @@ const interviewSchema = new mongoose.Schema(
     },
     durationMinutes: { type: Number, default: 20 },
     targetQuestionCount: { type: Number, default: 8 },
+    company: {
+      type: String,
+      default: "Google",
+    },
+
+    jobRole: {
+      type: String,
+      default: "Software Engineer",
+    },
+
+    experienceLevel: {
+      type: String,
+      default: "Fresher",
+    },
 
     qa: [qaSchema],
     currentIndex: { type: Number, default: 0 },
 
-    status: { type: String, enum: ["in_progress", "completed"], default: "in_progress" },
+    status: {
+      type: String,
+      enum: ["in_progress", "completed"],
+      default: "in_progress",
+    },
     evaluation: { type: evaluationSchema, default: () => ({}) },
 
     completedAt: { type: Date },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Interview", interviewSchema);

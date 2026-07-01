@@ -1,6 +1,9 @@
 const Interview = require("../models/Interview");
 const Resume = require("../models/Resume");
-const { generateNextQuestion, evaluateInterview } = require("../services/geminiService");
+const {
+  generateNextQuestion,
+  evaluateInterview,
+} = require("../services/geminiService");
 
 function calcTargetQuestionCount(durationMinutes) {
   // Roughly one question (with its follow-up exchange) every ~2.5 minutes.
@@ -23,10 +26,20 @@ async function loadResumeContext(userId) {
  */
 async function createInterview(req, res, next) {
   try {
-    const { type, difficulty = "intermediate", durationMinutes = 20 } = req.body;
+    const {
+      type,
+      difficulty = "intermediate",
+      durationMinutes = 20,
+      company = "Google",
+      jobRole = "Software Engineer",
+      experienceLevel = "Fresher",
+    } = req.body;
 
     if (!type) {
-      return res.status(400).json({ message: "type is required (hr, technical, dsa, project_viva, full_placement)." });
+      return res.status(400).json({
+        message:
+          "type is required (hr, technical, dsa, project_viva, full_placement).",
+      });
     }
 
     const resume = await loadResumeContext(req.userDoc._id);
@@ -45,6 +58,9 @@ async function createInterview(req, res, next) {
       type,
       difficulty,
       durationMinutes,
+      company,
+      jobRole,
+      experienceLevel,
       targetQuestionCount,
       qa: [{ question: first.question, category: first.category, answer: "" }],
       currentIndex: 0,
@@ -58,7 +74,9 @@ async function createInterview(req, res, next) {
 }
 
 async function finalizeInterview(interview, userDoc) {
-  const answeredQa = interview.qa.filter((qa) => qa.answer && qa.answer.trim().length > 0);
+  const answeredQa = interview.qa.filter(
+    (qa) => qa.answer && qa.answer.trim().length > 0,
+  );
 
   const evaluation = await evaluateInterview({
     profile: userDoc,
@@ -81,11 +99,17 @@ async function finalizeInterview(interview, userDoc) {
 async function submitAnswer(req, res, next) {
   try {
     const { answer } = req.body;
-    const interview = await Interview.findOne({ _id: req.params.id, user: req.userDoc._id });
+    const interview = await Interview.findOne({
+      _id: req.params.id,
+      user: req.userDoc._id,
+    });
 
-    if (!interview) return res.status(404).json({ message: "Interview not found." });
+    if (!interview)
+      return res.status(404).json({ message: "Interview not found." });
     if (interview.status !== "in_progress") {
-      return res.status(400).json({ message: "This interview has already ended." });
+      return res
+        .status(400)
+        .json({ message: "This interview has already ended." });
     }
 
     const idx = interview.currentIndex;
@@ -109,11 +133,19 @@ async function submitAnswer(req, res, next) {
       history: interview.qa,
     });
 
-    interview.qa.push({ question: next_.question, category: next_.category, answer: "" });
+    interview.qa.push({
+      question: next_.question,
+      category: next_.category,
+      answer: "",
+    });
     interview.currentIndex = interview.qa.length - 1;
     await interview.save();
 
-    res.json({ interview, isComplete: false, currentQuestion: interview.qa[interview.currentIndex] });
+    res.json({
+      interview,
+      isComplete: false,
+      currentQuestion: interview.qa[interview.currentIndex],
+    });
   } catch (err) {
     next(err);
   }
@@ -125,8 +157,12 @@ async function submitAnswer(req, res, next) {
  */
 async function completeInterview(req, res, next) {
   try {
-    const interview = await Interview.findOne({ _id: req.params.id, user: req.userDoc._id });
-    if (!interview) return res.status(404).json({ message: "Interview not found." });
+    const interview = await Interview.findOne({
+      _id: req.params.id,
+      user: req.userDoc._id,
+    });
+    if (!interview)
+      return res.status(404).json({ message: "Interview not found." });
     if (interview.status === "completed") return res.json(interview);
 
     const finished = await finalizeInterview(interview, req.userDoc);
@@ -143,7 +179,9 @@ async function listInterviews(req, res, next) {
   try {
     const interviews = await Interview.find({ user: req.userDoc._id })
       .sort({ createdAt: -1 })
-      .select("type difficulty durationMinutes status evaluation.overallScore createdAt completedAt");
+      .select(
+        "type difficulty durationMinutes status evaluation.overallScore createdAt completedAt",
+      );
     res.json(interviews);
   } catch (err) {
     next(err);
@@ -155,8 +193,12 @@ async function listInterviews(req, res, next) {
  */
 async function getInterview(req, res, next) {
   try {
-    const interview = await Interview.findOne({ _id: req.params.id, user: req.userDoc._id });
-    if (!interview) return res.status(404).json({ message: "Interview not found." });
+    const interview = await Interview.findOne({
+      _id: req.params.id,
+      user: req.userDoc._id,
+    });
+    if (!interview)
+      return res.status(404).json({ message: "Interview not found." });
     res.json(interview);
   } catch (err) {
     next(err);
@@ -168,14 +210,23 @@ async function getInterview(req, res, next) {
  */
 async function getStats(req, res, next) {
   try {
-    const completed = await Interview.find({ user: req.userDoc._id, status: "completed" })
+    const completed = await Interview.find({
+      user: req.userDoc._id,
+      status: "completed",
+    })
       .sort({ completedAt: 1 })
       .select("evaluation.overallScore completedAt type");
 
-    const scores = completed.map((i) => i.evaluation?.overallScore).filter((s) => typeof s === "number");
-    const averageScore = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+    const scores = completed
+      .map((i) => i.evaluation?.overallScore)
+      .filter((s) => typeof s === "number");
+    const averageScore = scores.length
+      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+      : 0;
     const interviewReadiness = scores.length
-      ? Math.round(scores.slice(-3).reduce((a, b) => a + b, 0) / scores.slice(-3).length)
+      ? Math.round(
+          scores.slice(-3).reduce((a, b) => a + b, 0) / scores.slice(-3).length,
+        )
       : 0;
 
     // Group by ISO week for a simple weekly progress chart.
@@ -188,10 +239,12 @@ async function getStats(req, res, next) {
       weekMap.set(weekLabel, arr);
     });
 
-    const weeklyProgress = Array.from(weekMap.entries()).map(([week, vals]) => ({
-      week,
-      avgScore: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length),
-    }));
+    const weeklyProgress = Array.from(weekMap.entries()).map(
+      ([week, vals]) => ({
+        week,
+        avgScore: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length),
+      }),
+    );
 
     res.json({
       interviewsCompleted: completed.length,
@@ -205,7 +258,9 @@ async function getStats(req, res, next) {
 }
 
 function getISOWeek(date) {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+  );
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
   const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);

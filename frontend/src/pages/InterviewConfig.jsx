@@ -78,7 +78,11 @@ export default function InterviewConfig() {
     setStarting(true);
     setError("");
     try {
-      const { data } = await client.post("/interviews", { type, difficulty, durationMinutes });
+      const { data } = await client.post("/interviews", {
+        type, difficulty, durationMinutes, company,
+        jobRole,
+        experienceLevel
+      });
       navigate(`/interview/${data.interview._id}`);
     } catch (err) {
       setError(err.response?.data?.message || "Couldn't start the interview. Try again.");
