@@ -93,6 +93,7 @@ function questionGenerationPrompt({
   company,
   jobRole,
   experienceLevel,
+  plan,
   history,
 }) {
   const companyGuide =
@@ -144,6 +145,14 @@ Projects: ${(resume.projects || []).map((p) => p.name).join(", ") || "Not specif
 Internships: ${(resume.internships || []).map((i) => `${i.role} at ${i.company}`).join(", ") || "None"}
 Strong areas: ${(resume.strongAreas || []).join(", ") || "Unknown"}
 Weak areas: ${(resume.weakAreas || []).join(", ") || "Unknown"}
+
+CURRENT INTERVIEW STAGE
+
+Topic:
+${plan?.topic || "General"}
+
+Instruction:
+${plan?.instruction || "Ask a balanced interview question."}
 
 INTERVIEW SO FAR
 ${historyText}

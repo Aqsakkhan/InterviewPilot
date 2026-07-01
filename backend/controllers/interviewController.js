@@ -46,6 +46,7 @@ async function createInterview(req, res, next) {
     const resume = await loadResumeContext(req.userDoc._id);
     const targetQuestionCount = calcTargetQuestionCount(durationMinutes);
     const interviewPlan = buildInterviewPlan(type);
+    const currentPlan = interviewPlan[0];
 
     const first = await generateNextQuestion({
       profile: req.userDoc,
@@ -55,6 +56,7 @@ async function createInterview(req, res, next) {
       company,
       jobRole,
       experienceLevel,
+      plan: currentPlan,
       history: [],
     });
 
@@ -131,6 +133,9 @@ async function submitAnswer(req, res, next) {
     }
 
     const resume = await Resume.findOne({ user: req.userDoc._id });
+    const currentPlan =
+      interview.plan[interview.currentIndex + 1] ||
+      interview.plan[interview.plan.length - 1];
     const next_ = await generateNextQuestion({
       profile: req.userDoc,
       resume,
@@ -139,6 +144,7 @@ async function submitAnswer(req, res, next) {
       company: interview.company,
       jobRole: interview.jobRole,
       experienceLevel: interview.experienceLevel,
+      plan: currentPlan,
       history: interview.qa,
     });
     interview.qa.push({
