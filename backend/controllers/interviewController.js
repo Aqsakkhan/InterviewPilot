@@ -4,7 +4,7 @@ const {
   generateNextQuestion,
   evaluateInterview,
 } = require("../services/geminiService");
-const { buildInterviewPlan } = require("../utils/interviewPlanner");
+const { buildInterviewPlan } = require("../utils/questionPlanner");
 
 function calcTargetQuestionCount(durationMinutes) {
   // Roughly one question (with its follow-up exchange) every ~2.5 minutes.
