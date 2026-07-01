@@ -5,6 +5,7 @@ const COMPANY_GUIDES = {
 - Ask "Why?" and "How?" instead of simple definitions.
 - Ask challenging follow-up questions.
 - Prioritize projects and DSA over theory.
+- Include at least one behavioral question on collaboration or ambiguity.
 - Interview difficulty should be high.
 `,
 
@@ -12,12 +13,15 @@ const COMPANY_GUIDES = {
 - Follow Amazon Leadership Principles.
 - Ask ownership and customer obsession questions.
 - Mix behavioural with backend/system questions.
+- Cover AWS services and REST API design where relevant to the role.
 - Prefer real-world scenarios over textbook questions.
 `,
 
   Microsoft: `
 - Focus on clean code, OOP and practical engineering.
 - Ask debugging and software design questions.
+- Cover Azure, SQL and backend fundamentals where relevant to the role.
+- Include project discussion questions about the candidate's own work.
 - Evaluate collaboration and communication.
 `,
 

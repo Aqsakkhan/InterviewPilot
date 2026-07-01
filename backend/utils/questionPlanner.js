@@ -57,9 +57,9 @@ const ROLE_TOPICS = {
 };
 
 const COMPANY_TOPICS = {
-  Google: ["System Design", "Scalability", "Algorithms"],
-  Microsoft: ["OOP", "System Design", "Problem Solving"],
-  Amazon: ["Leadership Principles", "Scalability", "REST APIs"],
+  Google: ["DSA", "Algorithms", "System Design", "Projects", "Behavioral"],
+  Microsoft: ["OOP", "Azure", "SQL", "Backend", "Project Discussion"],
+  Amazon: ["Leadership Principles", "AWS", "REST API", "Ownership"],
   Meta: ["Algorithms", "Distributed Systems", "Performance"],
   Apple: ["Architecture", "Performance", "Debugging"],
   Netflix: ["Distributed Systems", "Caching", "Performance"],
@@ -113,6 +113,61 @@ function extendPlan(baseSteps, targetLength, topicPool) {
   return steps;
 }
 
+/**
+ * Builds project-viva plan steps directly from the candidate's actual
+ * resume projects (name + tech stack), instead of a generic "one of the
+ * candidate's projects" placeholder. Each project gets two steps: an
+ * overview question, then a deeper decisions/challenges follow-up.
+ * Falls back to the old generic plan if the resume has no projects.
+ */
+function buildProjectVivaPlan(resume) {
+  const projects = (resume?.projects || []).filter((p) => p?.name);
+
+  if (!projects.length) {
+    return [
+      {
+        step: 1,
+        topic: "project",
+        instruction:
+          "Begin with one of the candidate's strongest resume projects. Ask about the overall architecture and purpose.",
+      },
+      {
+        step: 2,
+        topic: "project-followup",
+        instruction:
+          "Ask a deeper follow-up about technical decisions, challenges, or trade-offs.",
+      },
+      {
+        step: 3,
+        topic: "project-implementation",
+        instruction:
+          "Discuss implementation details, APIs, databases, or technologies used.",
+      },
+    ];
+  }
+
+  // Cap at 3 projects for the base plan; extendPlan() will pick up any
+  // remaining projects afterwards if the interview needs more questions.
+  const steps = [];
+  projects.slice(0, 3).forEach((project) => {
+    const techStack =
+      (project.techStack || []).join(", ") || "unspecified tech";
+
+    steps.push({
+      step: steps.length + 1,
+      topic: project.name,
+      instruction: `Ask about the "${project.name}" project (tech stack: ${techStack}). Cover its overall architecture, purpose, and the candidate's specific role in building it.`,
+    });
+    steps.push({
+      step: steps.length + 1,
+      topic: project.name,
+      instruction: `Ask a deeper follow-up about "${project.name}" - a specific technical decision, a challenge faced, or how the candidate would scale/improve it.`,
+    });
+  });
+
+  return steps;
+}
+
 function buildInterviewPlan({
   type,
   company,
@@ -124,7 +179,9 @@ function buildInterviewPlan({
   const topics = ROLE_TOPICS[jobRole] || ROLE_TOPICS["Software Engineer"];
   const companyTopics = COMPANY_TOPICS[company] || [];
   const weakAreas = resume?.weakAreas || [];
-  const topicPool = [...topics, ...companyTopics, ...weakAreas];
+  const projectNames = (resume?.projects || [])
+    .map((p) => p?.name)
+    .filter(Boolean);
 
   const basePlan = buildBasePlan({
     type,
@@ -132,36 +189,27 @@ function buildInterviewPlan({
     jobRole,
     topics,
     companyTopics,
+    resume,
   });
+
+  // For project vivas, prefer any leftover resume projects the base plan
+  // hasn't covered yet before falling back to generic role/company topics.
+  const usedProjectNames = new Set(basePlan.map((s) => s.topic));
+  const leftoverProjects = projectNames.filter((n) => !usedProjectNames.has(n));
+  const topicPool =
+    type === "project_viva"
+      ? [...leftoverProjects, ...topics, ...companyTopics, ...weakAreas]
+      : [...topics, ...companyTopics, ...weakAreas];
 
   if (!targetQuestionCount) return basePlan;
 
   return extendPlan(basePlan, targetQuestionCount, topicPool);
 }
 
-function buildBasePlan({ type, topics, companyTopics }) {
+function buildBasePlan({ type, topics, companyTopics, resume }) {
   switch (type) {
     case "project_viva":
-      return [
-        {
-          step: 1,
-          topic: "project",
-          instruction:
-            "Begin with one of the candidate's strongest resume projects. Ask about the overall architecture and purpose.",
-        },
-        {
-          step: 2,
-          topic: "project-followup",
-          instruction:
-            "Ask a deeper follow-up about technical decisions, challenges, or trade-offs.",
-        },
-        {
-          step: 3,
-          topic: "project-implementation",
-          instruction:
-            "Discuss implementation details, APIs, databases, or technologies used.",
-        },
-      ];
+      return buildProjectVivaPlan(resume);
 
     case "technical":
       return [
@@ -220,13 +268,15 @@ function buildBasePlan({ type, topics, companyTopics }) {
         },
       ];
 
-    default:
+    default: {
+      const firstProject = resume?.projects?.[0]?.name;
       return [
         {
           step: 1,
-          topic: "project",
-          instruction:
-            "Start with one of the candidate's strongest resume projects.",
+          topic: firstProject || "project",
+          instruction: firstProject
+            ? `Start with the candidate's "${firstProject}" project - ask about its purpose and architecture.`
+            : "Start with one of the candidate's strongest resume projects.",
         },
         {
           step: 2,
@@ -253,6 +303,7 @@ function buildBasePlan({ type, topics, companyTopics }) {
           instruction: "Ask one behavioral question.",
         },
       ];
+    }
   }
 }
 
