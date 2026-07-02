@@ -5,153 +5,7 @@ const {
   evaluateInterview,
 } = require("../services/geminiService");
 const { buildInterviewPlan } = require("../utils/questionPlanner");
-const ALL_ROUND_TYPES = [
-  "hr",
-  "technical",
-  "dsa",
-  "project_viva",
-  "full_placement",
-];
 
-/**
- * Picks the most frequently occurring item across all completed interviews'
- * evaluation.weakAreas / strongAreas arrays - a simple "mode" aggregation
- * so the dashboard can surface one representative weak/strong skill instead
- * of just whatever the resume parser found.
- */
-function mostCommon(lists) {
-  const counts = new Map();
-  lists.flat().forEach((item) => {
-    if (!item) return;
-    counts.set(item, (counts.get(item) || 0) + 1);
-  });
-  let best = null;
-  let bestCount = 0;
-  counts.forEach((count, item) => {
-    if (count > bestCount) {
-      best = item;
-      bestCount = count;
-    }
-  });
-  return best;
-}
-
-/**
- * Suggests the next interview to take: prioritizes a round type the
- * candidate hasn't tried yet, otherwise recommends the round type with the
- * lowest average score so far (their weakest practiced area).
- */
-function recommendNextInterview(completed) {
-  const scoresByType = new Map();
-  completed.forEach((i) => {
-    const score = i.evaluation?.overallScore;
-    if (typeof score !== "number") return;
-    const arr = scoresByType.get(i.type) || [];
-    arr.push(score);
-    scoresByType.set(i.type, arr);
-  });
-
-  const untried = ALL_ROUND_TYPES.find((t) => !scoresByType.has(t));
-  if (untried) {
-    return { type: untried, reason: "You haven't tried this round type yet." };
-  }
-
-  let weakestType = ALL_ROUND_TYPES[0];
-  let weakestAvg = Infinity;
-  scoresByType.forEach((scores, type) => {
-    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-    if (avg < weakestAvg) {
-      weakestAvg = avg;
-      weakestType = type;
-    }
-  });
-
-  return {
-    type: weakestType,
-    reason: `Your lowest average score (${Math.round(weakestAvg)}) is in this round - worth another attempt.`,
-  };
-}
-
-/**
- * GET /api/interviews/stats/summary
- */
-async function getStats(req, res, next) {
-  try {
-    const completed = await Interview.find({
-      user: req.userDoc._id,
-      status: "completed",
-    })
-      .sort({ completedAt: 1 })
-      .select(
-        "evaluation.overallScore evaluation.weakAreas evaluation.strongAreas completedAt type company jobRole",
-      );
-
-    const scores = completed
-      .map((i) => i.evaluation?.overallScore)
-      .filter((s) => typeof s === "number");
-    const averageScore = scores.length
-      ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-      : 0;
-    const interviewReadiness = scores.length
-      ? Math.round(
-          scores.slice(-3).reduce((a, b) => a + b, 0) / scores.slice(-3).length,
-        )
-      : 0;
-    const lastScore = scores.length ? scores[scores.length - 1] : null;
-
-    const recent = completed[completed.length - 1] || null;
-    const recentInterview = recent
-      ? {
-          id: recent._id,
-          type: recent.type,
-          company: recent.company,
-          jobRole: recent.jobRole,
-          overallScore: recent.evaluation?.overallScore ?? null,
-          completedAt: recent.completedAt,
-        }
-      : null;
-
-    const weakSkill = mostCommon(
-      completed.map((i) => i.evaluation?.weakAreas || []),
-    );
-    const strongSkill = mostCommon(
-      completed.map((i) => i.evaluation?.strongAreas || []),
-    );
-
-    const nextRecommendedInterview = recommendNextInterview(completed);
-
-    // Group by ISO week for a simple weekly progress chart.
-    const weekMap = new Map();
-    completed.forEach((i) => {
-      const d = new Date(i.completedAt);
-      const weekLabel = `${d.getFullYear()}-W${String(getISOWeek(d)).padStart(2, "0")}`;
-      const arr = weekMap.get(weekLabel) || [];
-      arr.push(i.evaluation.overallScore);
-      weekMap.set(weekLabel, arr);
-    });
-
-    const weeklyProgress = Array.from(weekMap.entries()).map(
-      ([week, vals]) => ({
-        week,
-        avgScore: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length),
-      }),
-    );
-
-    res.json({
-      interviewsCompleted: completed.length,
-      averageScore,
-      interviewReadiness,
-      lastScore,
-      recentInterview,
-      weakSkill,
-      strongSkill,
-      nextRecommendedInterview,
-      weeklyProgress,
-    });
-  } catch (err) {
-    next(err);
-  }
-}
 function calcTargetQuestionCount(durationMinutes) {
   // Roughly one question (with its follow-up exchange) every ~2.5 minutes.
   return Math.min(20, Math.max(4, Math.round(durationMinutes / 2.5)));
@@ -386,6 +240,73 @@ async function getInterview(req, res, next) {
   }
 }
 
+const ALL_ROUND_TYPES = [
+  "hr",
+  "technical",
+  "dsa",
+  "project_viva",
+  "full_placement",
+];
+
+/**
+ * Picks the most frequently occurring item across all completed interviews'
+ * evaluation.weakAreas / strongAreas arrays - a simple "mode" aggregation
+ * so the dashboard can surface one representative weak/strong skill instead
+ * of just whatever the resume parser found.
+ */
+function mostCommon(lists) {
+  const counts = new Map();
+  lists.flat().forEach((item) => {
+    if (!item) return;
+    counts.set(item, (counts.get(item) || 0) + 1);
+  });
+  let best = null;
+  let bestCount = 0;
+  counts.forEach((count, item) => {
+    if (count > bestCount) {
+      best = item;
+      bestCount = count;
+    }
+  });
+  return best;
+}
+
+/**
+ * Suggests the next interview to take: prioritizes a round type the
+ * candidate hasn't tried yet, otherwise recommends the round type with the
+ * lowest average score so far (their weakest practiced area).
+ */
+function recommendNextInterview(completed) {
+  const scoresByType = new Map();
+  completed.forEach((i) => {
+    const score = i.evaluation?.overallScore;
+    if (typeof score !== "number") return;
+    const arr = scoresByType.get(i.type) || [];
+    arr.push(score);
+    scoresByType.set(i.type, arr);
+  });
+
+  const untried = ALL_ROUND_TYPES.find((t) => !scoresByType.has(t));
+  if (untried) {
+    return { type: untried, reason: "You haven't tried this round type yet." };
+  }
+
+  let weakestType = ALL_ROUND_TYPES[0];
+  let weakestAvg = Infinity;
+  scoresByType.forEach((scores, type) => {
+    const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+    if (avg < weakestAvg) {
+      weakestAvg = avg;
+      weakestType = type;
+    }
+  });
+
+  return {
+    type: weakestType,
+    reason: `Your lowest average score (${Math.round(weakestAvg)}) is in this round - worth another attempt.`,
+  };
+}
+
 /**
  * GET /api/interviews/stats/summary
  */
@@ -396,7 +317,9 @@ async function getStats(req, res, next) {
       status: "completed",
     })
       .sort({ completedAt: 1 })
-      .select("evaluation.overallScore completedAt type");
+      .select(
+        "evaluation.overallScore evaluation.weakAreas evaluation.strongAreas completedAt type company jobRole",
+      );
 
     const scores = completed
       .map((i) => i.evaluation?.overallScore)
@@ -409,6 +332,28 @@ async function getStats(req, res, next) {
           scores.slice(-3).reduce((a, b) => a + b, 0) / scores.slice(-3).length,
         )
       : 0;
+    const lastScore = scores.length ? scores[scores.length - 1] : null;
+
+    const recent = completed[completed.length - 1] || null;
+    const recentInterview = recent
+      ? {
+          id: recent._id,
+          type: recent.type,
+          company: recent.company,
+          jobRole: recent.jobRole,
+          overallScore: recent.evaluation?.overallScore ?? null,
+          completedAt: recent.completedAt,
+        }
+      : null;
+
+    const weakSkill = mostCommon(
+      completed.map((i) => i.evaluation?.weakAreas || []),
+    );
+    const strongSkill = mostCommon(
+      completed.map((i) => i.evaluation?.strongAreas || []),
+    );
+
+    const nextRecommendedInterview = recommendNextInterview(completed);
 
     // Group by ISO week for a simple weekly progress chart.
     const weekMap = new Map();
@@ -431,6 +376,11 @@ async function getStats(req, res, next) {
       interviewsCompleted: completed.length,
       averageScore,
       interviewReadiness,
+      lastScore,
+      recentInterview,
+      weakSkill,
+      strongSkill,
+      nextRecommendedInterview,
       weeklyProgress,
     });
   } catch (err) {
