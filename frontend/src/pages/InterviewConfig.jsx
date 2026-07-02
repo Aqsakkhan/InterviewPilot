@@ -66,7 +66,7 @@ export default function InterviewConfig() {
   const navigate = useNavigate();
 
   const [type, setType] = useState(params.get("type") || "full_placement");
-  const [difficulty, setDifficulty] = useState("intermediate");
+  const [difficulty, setDifficulty] = useState(params.get("difficulty") || "intermediate");
   const [durationMinutes, setDurationMinutes] = useState(20);
   const [company, setCompany] = useState("Google");
   const [jobRole, setJobRole] = useState("Software Engineer");

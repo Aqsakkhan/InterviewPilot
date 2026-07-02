@@ -188,11 +188,11 @@ ${company} hiring a ${jobRole} would.
 
 Adjust the interview style based on:
 
-- Company
-- Job Role
-- Candidate Experience Level
-- Resume
-- Previous answers
+• Company
+• Job Role
+• Candidate Experience Level
+• Resume
+• Previous answers
 
 Examples:
 
@@ -295,7 +295,17 @@ Then give:
 - summary: 2-3 sentence overall interview summary in a constructive, encouraging but honest tone
 - recruiterFeedback: a short paragraph (3-4 sentences) written in the voice of a recruiter giving the candidate direct, honest hiring-style feedback on this specific performance
 - companyReadiness: { score: 0-100 how ready this candidate seems for ${company}'s interview bar specifically, verdict: one short sentence explaining why }
-- roleReadiness: { score: 0-100 how ready this candidate seems for the ${jobRole} role specifically, verdict: one short sentence explaining why }`;
+- roleReadiness: { score: 0-100 how ready this candidate seems for the ${jobRole} role specifically, verdict: one short sentence explaining why }
+
+Finally, generate a structured post-interview learning plan based on the
+weakAreas you identified above:
+
+- topicsToLearn: 3-5 short topic names the candidate should study next (e.g. "JWT Authentication", "SQL Joins")
+- resources: 3-5 well-known, real resource or course names related to the weak areas (e.g. "MDN Web Docs - HTTP", "freeCodeCamp REST API course", "official Node.js documentation"). Name real, well-known resources only - do NOT invent URLs or fabricate resource names that may not exist.
+- practiceQuestions: 4-6 NEW practice questions (not ones already asked in this transcript) that specifically target the weak areas, so the candidate can self-practice
+- nextDifficulty: one of "beginner", "intermediate", "advanced" - what difficulty they should attempt next (current difficulty was ${difficulty})
+- nextDifficultyReason: one short sentence explaining the nextDifficulty choice
+- roadmap: 3-5 sequential steps ({ step: number, title: short string, description: one sentence }) forming a short study roadmap that builds toward the target role/company, ordered from most urgent to least urgent`;
 }
 
 const evaluationSchema = {
@@ -333,6 +343,39 @@ const evaluationSchema = {
       },
       required: ["score", "verdict"],
     },
+    recommendations: {
+      type: Type.OBJECT,
+      properties: {
+        topicsToLearn: { type: Type.ARRAY, items: { type: Type.STRING } },
+        resources: { type: Type.ARRAY, items: { type: Type.STRING } },
+        practiceQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+        nextDifficulty: {
+          type: Type.STRING,
+          enum: ["beginner", "intermediate", "advanced"],
+        },
+        nextDifficultyReason: { type: Type.STRING },
+        roadmap: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              step: { type: Type.NUMBER },
+              title: { type: Type.STRING },
+              description: { type: Type.STRING },
+            },
+            required: ["step", "title", "description"],
+          },
+        },
+      },
+      required: [
+        "topicsToLearn",
+        "resources",
+        "practiceQuestions",
+        "nextDifficulty",
+        "nextDifficultyReason",
+        "roadmap",
+      ],
+    },
   },
   required: [
     "technicalScore",
@@ -353,8 +396,10 @@ const evaluationSchema = {
     "recruiterFeedback",
     "companyReadiness",
     "roleReadiness",
+    "recommendations",
   ],
 };
+
 module.exports = {
   resumeExtractionPrompt,
   resumeExtractionSchema,

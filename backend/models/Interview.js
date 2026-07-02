@@ -20,6 +20,31 @@ const readinessSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const roadmapStepSchema = new mongoose.Schema(
+  {
+    step: { type: Number },
+    title: { type: String },
+    description: { type: String },
+  },
+  { _id: false },
+);
+
+const recommendationsSchema = new mongoose.Schema(
+  {
+    topicsToLearn: [String],
+    resources: [String], // named resources (docs/course titles), never fabricated URLs
+    practiceQuestions: [String],
+    nextDifficulty: {
+      type: String,
+      enum: ["beginner", "intermediate", "advanced"],
+      default: "intermediate",
+    },
+    nextDifficultyReason: { type: String, default: "" },
+    roadmap: [roadmapStepSchema],
+  },
+  { _id: false },
+);
+
 const evaluationSchema = new mongoose.Schema(
   {
     // Core scores
@@ -51,6 +76,9 @@ const evaluationSchema = new mongoose.Schema(
     // Readiness verdicts
     companyReadiness: { type: readinessSchema, default: () => ({}) },
     roleReadiness: { type: readinessSchema, default: () => ({}) },
+
+    // Structured post-interview learning recommendations
+    recommendations: { type: recommendationsSchema, default: () => ({}) },
   },
   { _id: false },
 );

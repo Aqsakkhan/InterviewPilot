@@ -15,6 +15,7 @@ import {
 import client from "../api/client";
 import GlassCard from "../components/GlassCard";
 import ScoreRing from "../components/ScoreRing";
+import LearningRecommendations from "../components/LearningRecommendations";
 
 const CORE_SCORES = [
   { key: "technicalScore", label: "Technical" },
@@ -168,7 +169,7 @@ export default function PerformanceReport() {
           </ol>
         </GlassCard>
       )}
-
+      <LearningRecommendations recommendations={evalData.recommendations} interviewType={interview.type} />
       {/* Coaching bullets */}
       <div className="grid sm:grid-cols-2 gap-4">
         <GlassCard className="p-6">
