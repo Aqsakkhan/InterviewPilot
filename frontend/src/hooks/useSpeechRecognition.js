@@ -1,9 +1,17 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 
+const ERROR_MESSAGES = {
+  "not-allowed": "Microphone access denied - check your browser permissions.",
+  "no-speech": "Didn't catch that - try speaking again.",
+  network: "Network error during speech recognition.",
+  "audio-capture": "No microphone was found.",
+};
+
 export function useSpeechRecognition() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [interimTranscript, setInterimTranscript] = useState("");
+  const [error, setError] = useState("");
   const recognitionRef = useRef(null);
 
   const isSupported =
@@ -12,7 +20,8 @@ export function useSpeechRecognition() {
 
   useEffect(() => {
     if (!isSupported) return;
-    const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognitionImpl =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognitionImpl();
     recognition.continuous = true;
     recognition.interimResults = true;
@@ -38,6 +47,12 @@ export function useSpeechRecognition() {
     recognition.onerror = (event) => {
       console.warn("Speech recognition error:", event.error);
       setIsListening(false);
+      if (event.error !== "no-speech") {
+        setError(
+          ERROR_MESSAGES[event.error] ||
+            "Speech recognition error - try again.",
+        );
+      }
     };
 
     recognition.onend = () => {
@@ -61,6 +76,7 @@ export function useSpeechRecognition() {
   const start = useCallback(() => {
     if (!recognitionRef.current || isListening) return;
     setInterimTranscript("");
+    setError("");
     try {
       recognitionRef.current.start();
       setIsListening(true);
@@ -86,6 +102,7 @@ export function useSpeechRecognition() {
     transcript,
     interimTranscript,
     fullTranscript: `${transcript} ${interimTranscript}`.trim(),
+    error,
     start,
     stop,
     resetTranscript,

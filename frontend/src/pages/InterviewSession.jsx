@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Mic, Square, Send, Volume2 } from "lucide-react";
+import { Mic, Square, Send, Volume2, VolumeX, RotateCcw } from "lucide-react";
 import client from "../api/client";
 import GlassCard from "../components/GlassCard";
 import InterviewerOrb from "../components/InterviewerOrb";
@@ -16,6 +16,12 @@ const CATEGORY_STYLE = {
   general: "text-muted border-line bg-white/5",
 };
 
+function formatTimer(totalSeconds) {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
 export default function InterviewSession() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -29,6 +35,15 @@ export default function InterviewSession() {
   const speechRec = useSpeechRecognition();
   const speechSyn = useSpeechSynthesis();
   const hasAutoSpokenRef = useRef(null);
+  const [listenSeconds, setListenSeconds] = useState(0);
+
+  // Speaking timer - counts up while the mic is actively listening.
+  useEffect(() => {
+    if (!speechRec.isListening) return;
+    setListenSeconds(0);
+    const interval = setInterval(() => setListenSeconds((s) => s + 1), 1000);
+    return () => clearInterval(interval);
+  }, [speechRec.isListening]);
 
   useEffect(() => {
     client.get(`/interviews/${id}`).then(({ data }) => {
@@ -86,6 +101,12 @@ export default function InterviewSession() {
     }
   };
 
+  const retryAnswer = () => {
+    speechRec.stop();
+    speechRec.resetTranscript();
+    setAnswerText("");
+  };
+
   const endEarly = async () => {
     if (!window.confirm("End this interview now and get your report?")) return;
     setSubmitting(true);
@@ -110,6 +131,16 @@ export default function InterviewSession() {
 
   const orbState = submitting ? "thinking" : speechSyn.isSpeaking ? "speaking" : speechRec.isListening ? "listening" : "idle";
 
+  const statusText = submitting
+    ? "Generating your next question..."
+    : speechSyn.isSpeaking
+      ? "Interviewer is speaking..."
+      : speechRec.isListening
+        ? `Listening... ${formatTimer(listenSeconds)}`
+        : speechRec.error
+          ? speechRec.error
+          : "Ready when you are";
+
   return (
     <div className="max-w-2xl mx-auto">
       <InterviewContextBar
@@ -122,8 +153,23 @@ export default function InterviewSession() {
         onEndInterview={endEarly}
       />
 
-      <div className="flex flex-col items-center gap-5 mb-8">
+      <div className="flex flex-col items-center gap-3 mb-8">
         <InterviewerOrb state={orbState} size={140} />
+
+        <div className="flex flex-col items-center gap-1.5 h-8">
+          <p
+            className={`text-xs font-mono uppercase tracking-wide ${speechRec.error ? "text-warning" : "text-muted"
+              }`}
+          >
+            {statusText}
+          </p>
+          {speechRec.isListening && (
+            <div className="waveform">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+          )}
+        </div>
+
         {currentQuestion && (
           <div className="flex items-center gap-2">
             <span
@@ -144,13 +190,23 @@ export default function InterviewSession() {
       <GlassCard strong className="p-6">
         <div className="flex items-start gap-2">
           <p className="font-display text-lg leading-snug flex-1">{currentQuestion?.question}</p>
-          <button
-            onClick={() => speechSyn.speak(currentQuestion.question)}
-            className="focus-ring p-2 rounded-lg text-muted hover:text-accent hover:bg-white/5 transition-colors shrink-0"
-            title="Replay question"
-          >
-            <Volume2 size={18} />
-          </button>
+          {speechSyn.isSpeaking ? (
+            <button
+              onClick={speechSyn.cancel}
+              className="focus-ring p-2 rounded-lg text-accent hover:bg-white/5 transition-colors shrink-0"
+              title="Stop speaking"
+            >
+              <VolumeX size={18} />
+            </button>
+          ) : (
+            <button
+              onClick={() => speechSyn.speak(currentQuestion.question)}
+              className="focus-ring p-2 rounded-lg text-muted hover:text-accent hover:bg-white/5 transition-colors shrink-0"
+              title="Replay question"
+            >
+              <Volume2 size={18} />
+            </button>
+          )}
         </div>
 
         <div className="mt-5">
@@ -160,8 +216,8 @@ export default function InterviewSession() {
               <button
                 onClick={toggleMic}
                 className={`focus-ring flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${speechRec.isListening
-                  ? "border-accent text-accent bg-accent/10"
-                  : "border-line text-muted hover:bg-white/5"
+                    ? "border-accent text-accent bg-accent/10"
+                    : "border-line text-muted hover:bg-white/5"
                   }`}
               >
                 {speechRec.isListening ? <Square size={12} /> : <Mic size={12} />}
@@ -185,13 +241,23 @@ export default function InterviewSession() {
 
         {error && <p className="text-sm text-red-400 mt-3">{error}</p>}
 
-        <button
-          onClick={submitAnswer}
-          disabled={submitting || !answerText.trim()}
-          className="focus-ring w-full mt-5 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dim transition-colors disabled:opacity-50"
-        >
-          {submitting ? "Thinking of a follow-up..." : "Submit answer"} <Send size={15} />
-        </button>
+        <div className="flex gap-3 mt-5">
+          <button
+            onClick={retryAnswer}
+            disabled={submitting || (!answerText.trim() && !speechRec.isListening)}
+            title="Clear and retry your answer"
+            className="focus-ring inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-line text-muted hover:text-ink hover:bg-white/5 transition-colors disabled:opacity-40 disabled:pointer-events-none"
+          >
+            <RotateCcw size={15} /> Retry
+          </button>
+          <button
+            onClick={submitAnswer}
+            disabled={submitting || !answerText.trim()}
+            className="focus-ring flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-primary text-white font-medium hover:bg-primary-dim transition-colors disabled:opacity-50"
+          >
+            {submitting ? "Thinking of a follow-up..." : "Submit answer"} <Send size={15} />
+          </button>
+        </div>
       </GlassCard>
 
       {interview.qa.length > 1 && (
