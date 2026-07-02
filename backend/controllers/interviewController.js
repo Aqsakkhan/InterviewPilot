@@ -215,7 +215,7 @@ async function listInterviews(req, res, next) {
     const interviews = await Interview.find({ user: req.userDoc._id })
       .sort({ createdAt: -1 })
       .select(
-        "type difficulty durationMinutes status evaluation.overallScore createdAt completedAt",
+        "type difficulty durationMinutes company jobRole status evaluation.overallScore createdAt completedAt",
       );
     res.json(interviews);
   } catch (err) {

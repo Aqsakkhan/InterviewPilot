@@ -8,6 +8,14 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
 }
 
+function formatDuration(mins) {
+  if (!mins) return null;
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
 const TYPE_LABEL = {
   hr: "HR Interview",
   technical: "Technical Interview",
@@ -51,13 +59,20 @@ export default function InterviewHistory() {
         {interviews.map((iv) => (
           <Link key={iv._id} to={iv.status === "completed" ? `/report/${iv._id}` : `/interview/${iv._id}`}>
             <GlassCard className="p-5 flex items-center justify-between hover:bg-white/[0.06] transition-colors">
-              <div>
+              <div className="min-w-0">
                 <p className="font-medium">{TYPE_LABEL[iv.type] || iv.type}</p>
+                {(iv.company || iv.jobRole) && (
+                  <p className="text-xs text-accent mt-1 truncate">
+                    {[iv.company, iv.jobRole].filter(Boolean).join(" · ")}
+                  </p>
+                )}
                 <p className="text-xs text-muted mt-1 font-mono uppercase">
-                  {iv.difficulty} - {formatDate(iv.createdAt)}
+                  {[iv.difficulty, formatDate(iv.createdAt), formatDuration(iv.durationMinutes)]
+                    .filter(Boolean)
+                    .join(" - ")}
                 </p>
               </div>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 shrink-0">
                 {iv.status === "completed" ? (
                   <span className="font-display text-xl font-semibold">{Math.round(iv.evaluation?.overallScore ?? 0)}</span>
                 ) : (
