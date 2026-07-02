@@ -8,6 +8,7 @@ const {
   getInterview,
   getStats,
   getProgress,
+  downloadInterviewReportPdf,
 } = require("../controllers/interviewController");
 
 const router = express.Router();
@@ -19,6 +20,7 @@ router.get("/stats/progress", getProgress);
 router.post("/", createInterview);
 router.get("/", listInterviews);
 router.get("/:id", getInterview);
+router.get("/:id/report/pdf", downloadInterviewReportPdf);
 router.post("/:id/answer", submitAnswer);
 router.post("/:id/complete", completeInterview);
 

@@ -11,6 +11,7 @@ import {
   Route,
   Star,
   AlertTriangle,
+  Download,
 } from "lucide-react";
 import client from "../api/client";
 import GlassCard from "../components/GlassCard";
@@ -34,10 +35,34 @@ const SECONDARY_SCORES = [
 export default function PerformanceReport() {
   const { id } = useParams();
   const [interview, setInterview] = useState(null);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState("");
 
   useEffect(() => {
     client.get(`/interviews/${id}`).then(({ data }) => setInterview(data));
   }, [id]);
+
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    setPdfError("");
+    try {
+      const response = await client.get(`/interviews/${id}/report/pdf`, { responseType: "blob" });
+      const blobUrl = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" })
+      );
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = `interview-report-${id}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch {
+      setPdfError("Couldn't generate the PDF. Try again.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   if (!interview) {
     return <p className="text-muted">Loading your report...</p>;
@@ -49,12 +74,23 @@ export default function PerformanceReport() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
-      <div>
-        <p className="text-xs font-mono uppercase tracking-wide text-muted">
-          {interview.type.replace("_", " ")} - {interview.difficulty}
-        </p>
-        <h1 className="font-display text-2xl sm:text-3xl font-semibold mt-1">Your performance report</h1>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-xs font-mono uppercase tracking-wide text-muted">
+            {interview.type.replace("_", " ")} - {interview.difficulty}
+          </p>
+          <h1 className="font-display text-2xl sm:text-3xl font-semibold mt-1">Your performance report</h1>
+        </div>
+        <button
+          onClick={handleDownloadPdf}
+          disabled={downloadingPdf}
+          className="focus-ring shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-line text-ink hover:bg-white/5 transition-colors disabled:opacity-50"
+        >
+          <Download size={14} />
+          {downloadingPdf ? "Preparing..." : "Download PDF"}
+        </button>
       </div>
+      {pdfError && <p className="text-sm text-red-400 -mt-4">{pdfError}</p>}
 
       {/* Core scores */}
       <GlassCard strong className="p-8 flex flex-col sm:flex-row items-center gap-8">
@@ -169,7 +205,9 @@ export default function PerformanceReport() {
           </ol>
         </GlassCard>
       )}
+
       <LearningRecommendations recommendations={evalData.recommendations} interviewType={interview.type} />
+
       {/* Coaching bullets */}
       <div className="grid sm:grid-cols-2 gap-4">
         <GlassCard className="p-6">

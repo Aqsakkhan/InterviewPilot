@@ -5,6 +5,9 @@ const {
   evaluateInterview,
 } = require("../services/geminiService");
 const { buildInterviewPlan } = require("../utils/questionPlanner");
+const {
+  generateInterviewReportPdf,
+} = require("../services/interviewReportService");
 
 function calcTargetQuestionCount(durationMinutes) {
   // Roughly one question (with its follow-up exchange) every ~2.5 minutes.
@@ -472,6 +475,38 @@ async function getProgress(req, res, next) {
   }
 }
 
+/**
+ * GET /api/interviews/:id/report/pdf
+ */
+async function downloadInterviewReportPdf(req, res, next) {
+  try {
+    const interview = await Interview.findOne({
+      _id: req.params.id,
+      user: req.userDoc._id,
+    });
+
+    if (!interview) {
+      return res.status(404).json({ message: "Interview not found." });
+    }
+    if (interview.status !== "completed") {
+      return res.status(400).json({
+        message: "Finish this interview before downloading its report.",
+      });
+    }
+
+    const pdfBuffer = await generateInterviewReportPdf(interview, req.userDoc);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="interview-report-${interview._id}.pdf"`,
+    );
+    res.send(pdfBuffer);
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   createInterview,
   submitAnswer,
@@ -480,4 +515,5 @@ module.exports = {
   getInterview,
   getStats,
   getProgress,
+  downloadInterviewReportPdf,
 };
