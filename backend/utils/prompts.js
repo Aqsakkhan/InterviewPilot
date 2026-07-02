@@ -245,7 +245,14 @@ const questionGenerationSchema = {
 /* Evaluation                                                               */
 /* ----------------------------------------------------------------------- */
 
-function evaluationPrompt({ profile, type, difficulty, qaList }) {
+function evaluationPrompt({
+  profile,
+  type,
+  difficulty,
+  company,
+  jobRole,
+  qaList,
+}) {
   const transcript = qaList
     .map(
       (qa, i) =>
@@ -255,26 +262,40 @@ function evaluationPrompt({ profile, type, difficulty, qaList }) {
 
   return `You are grading a placement-prep mock interview transcript.
 Round type: ${type} | Difficulty: ${difficulty} | Target role: ${profile.targetRole}.
+Target company for this interview: ${company}
+Target job role for this interview: ${jobRole}
 
 TRANSCRIPT
 ${transcript}
+
+Base every score and comment strictly on evidence in the transcript above.
+Do not invent details, skills, or answers the candidate did not give.
 
 Score the candidate from 0-100 on each axis below (be honest and specific,
 do not default to a flat 70 for everything - reward real depth, penalize
 vague or generic answers). If an axis genuinely does not apply to this round
 type, still give your best estimate rather than leaving it out.
 
-- technicalScore: depth and correctness of technical/domain content
-- communicationScore: clarity, structure, articulation
-- confidenceScore: how assured and decisive the answers sounded
-- dsaScore: problem-solving / algorithmic reasoning quality (estimate even outside DSA rounds if any reasoning was tested)
+- technicalScore (Technical Knowledge): depth and correctness of technical/domain content
+- communicationScore (Communication): clarity, structure, articulation
+- confidenceScore (Confidence): how assured and decisive the answers sounded
+- problemSolvingScore (Problem Solving): reasoning/approach quality when working through a problem (estimate even outside DSA rounds if any reasoning was tested)
 - hrScore: behavioral/HR quality - self-awareness, motivation, teamwork signal
+- vocabularyScore (Vocabulary): range and precision of technical/professional vocabulary used
+- fluencyScore (Fluency): how smoothly and coherently answers were expressed (structure, minimal rambling)
+- answerQualityScore (Answer Quality): overall completeness and correctness of answers as a whole
 - overallScore: your holistic 0-100 readiness score for this round
 
 Then give:
-- strengths: 2-4 short, specific, evidence-based bullet points
-- improvements: 2-4 short, specific, actionable bullet points
-- summary: 2-3 sentence overall summary in a constructive, encouraging but honest tone`;
+- strengths: 2-4 short, specific, evidence-based bullet points about how the candidate performed (behavioral coaching tone)
+- improvements: 2-4 short, specific, actionable bullet points on how to improve (behavioral coaching tone)
+- strongAreas: 2-4 short topic/skill labels the candidate is clearly strong in (e.g. "React", "System Design") - single topic per item, not full sentences
+- weakAreas: 2-4 short topic/skill labels the candidate should brush up on - single topic per item, not full sentences
+- learningPath: 3-5 short, concrete next-step recommendations tied directly to the weakAreas above (e.g. "Practice 10 REST API design questions", "Revise JWT-based authentication")
+- summary: 2-3 sentence overall interview summary in a constructive, encouraging but honest tone
+- recruiterFeedback: a short paragraph (3-4 sentences) written in the voice of a recruiter giving the candidate direct, honest hiring-style feedback on this specific performance
+- companyReadiness: { score: 0-100 how ready this candidate seems for ${company}'s interview bar specifically, verdict: one short sentence explaining why }
+- roleReadiness: { score: 0-100 how ready this candidate seems for the ${jobRole} role specifically, verdict: one short sentence explaining why }`;
 }
 
 const evaluationSchema = {
@@ -283,26 +304,57 @@ const evaluationSchema = {
     technicalScore: { type: Type.NUMBER },
     communicationScore: { type: Type.NUMBER },
     confidenceScore: { type: Type.NUMBER },
-    dsaScore: { type: Type.NUMBER },
+    problemSolvingScore: { type: Type.NUMBER },
     hrScore: { type: Type.NUMBER },
+    vocabularyScore: { type: Type.NUMBER },
+    fluencyScore: { type: Type.NUMBER },
+    answerQualityScore: { type: Type.NUMBER },
     overallScore: { type: Type.NUMBER },
     strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
     improvements: { type: Type.ARRAY, items: { type: Type.STRING } },
+    strongAreas: { type: Type.ARRAY, items: { type: Type.STRING } },
+    weakAreas: { type: Type.ARRAY, items: { type: Type.STRING } },
+    learningPath: { type: Type.ARRAY, items: { type: Type.STRING } },
     summary: { type: Type.STRING },
+    recruiterFeedback: { type: Type.STRING },
+    companyReadiness: {
+      type: Type.OBJECT,
+      properties: {
+        score: { type: Type.NUMBER },
+        verdict: { type: Type.STRING },
+      },
+      required: ["score", "verdict"],
+    },
+    roleReadiness: {
+      type: Type.OBJECT,
+      properties: {
+        score: { type: Type.NUMBER },
+        verdict: { type: Type.STRING },
+      },
+      required: ["score", "verdict"],
+    },
   },
   required: [
     "technicalScore",
     "communicationScore",
     "confidenceScore",
-    "dsaScore",
+    "problemSolvingScore",
     "hrScore",
+    "vocabularyScore",
+    "fluencyScore",
+    "answerQualityScore",
     "overallScore",
     "strengths",
     "improvements",
+    "strongAreas",
+    "weakAreas",
+    "learningPath",
     "summary",
+    "recruiterFeedback",
+    "companyReadiness",
+    "roleReadiness",
   ],
 };
-
 module.exports = {
   resumeExtractionPrompt,
   resumeExtractionSchema,

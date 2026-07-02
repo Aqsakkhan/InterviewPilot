@@ -104,6 +104,8 @@ async function finalizeInterview(interview, userDoc) {
     profile: userDoc,
     type: interview.type,
     difficulty: interview.difficulty,
+    company: interview.company,
+    jobRole: interview.jobRole,
     qaList: answeredQa.length ? answeredQa : interview.qa,
   });
 

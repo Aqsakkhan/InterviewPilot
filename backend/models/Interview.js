@@ -12,17 +12,45 @@ const qaSchema = new mongoose.Schema(
   { _id: false },
 );
 
+const readinessSchema = new mongoose.Schema(
+  {
+    score: { type: Number, default: null },
+    verdict: { type: String, default: "" },
+  },
+  { _id: false },
+);
+
 const evaluationSchema = new mongoose.Schema(
   {
-    technicalScore: { type: Number, default: null },
+    // Core scores
+    overallScore: { type: Number, default: null },
+    technicalScore: { type: Number, default: null }, // Technical Knowledge
     communicationScore: { type: Number, default: null },
     confidenceScore: { type: Number, default: null },
-    dsaScore: { type: Number, default: null },
+    problemSolvingScore: { type: Number, default: null }, // was dsaScore
     hrScore: { type: Number, default: null },
-    overallScore: { type: Number, default: null },
+
+    // Speech/answer quality scores
+    vocabularyScore: { type: Number, default: null },
+    fluencyScore: { type: Number, default: null },
+    answerQualityScore: { type: Number, default: null },
+
+    // Coaching bullets (behavioral, actionable)
     strengths: [String],
     improvements: [String],
+
+    // Topic-level areas (for learning recommendations / dashboard)
+    strongAreas: [String],
+    weakAreas: [String],
+    learningPath: [String],
+
+    // Narrative feedback
     summary: { type: String, default: "" },
+    recruiterFeedback: { type: String, default: "" },
+
+    // Readiness verdicts
+    companyReadiness: { type: readinessSchema, default: () => ({}) },
+    roleReadiness: { type: readinessSchema, default: () => ({}) },
   },
   { _id: false },
 );

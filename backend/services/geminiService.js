@@ -156,13 +156,22 @@ async function generateNextQuestion({
 /**
  * Evaluates a completed interview.
  */
-async function evaluateInterview({ profile, type, difficulty, qaList }) {
+async function evaluateInterview({
+  profile,
+  type,
+  difficulty,
+  company,
+  jobRole,
+  qaList,
+}) {
   return generateJSON(
     "interview evaluation",
     prompts.evaluationPrompt({
       profile,
       type,
       difficulty,
+      company,
+      jobRole,
       qaList,
     }),
     prompts.evaluationSchema,
