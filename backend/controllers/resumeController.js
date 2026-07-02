@@ -121,21 +121,30 @@ async function uploadResume(req, res, next) {
     const resume = await Resume.findOneAndUpdate(
       { user: req.userDoc._id },
       {
-        user: req.userDoc._id,
-        fileName: req.file.originalname,
-        rawText,
-        name: data.name,
-        email: data.email,
-        phone: data.phone,
-        skills: data.skills || [],
-        projects: data.projects || [],
-        internships: data.experience || [],
-        experience: data.experience || [],
-        education: data.education || [],
-        certifications: data.certifications || [],
-        strongAreas: data.strongAreas || [],
-        weakAreas: analysis.missingSkills || [],
-        analysis,
+        $set: {
+          user: req.userDoc._id,
+          fileName: req.file.originalname,
+          rawText,
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          skills: data.skills || [],
+          projects: data.projects || [],
+          internships: data.experience || [],
+          experience: data.experience || [],
+          education: data.education || [],
+          certifications: data.certifications || [],
+          strongAreas: data.strongAreas || [],
+          weakAreas: analysis.missingSkills || [],
+          analysis,
+        },
+        $push: {
+          atsScoreHistory: {
+            atsScore: analysis.atsScore,
+            strengthScore: analysis.strengthScore,
+            recordedAt: new Date(),
+          },
+        },
       },
       { new: true, upsert: true },
     );
@@ -205,6 +214,11 @@ async function reanalyzeResume(req, res, next) {
     // weakAreas is also updated to reflect the new role's missing skills.
     resume.analysis = analysis;
     resume.weakAreas = analysis.missingSkills || [];
+    resume.atsScoreHistory.push({
+      atsScore: analysis.atsScore,
+      strengthScore: analysis.strengthScore,
+      recordedAt: new Date(),
+    });
     await resume.save();
 
     res.json(resume);

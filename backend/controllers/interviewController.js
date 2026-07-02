@@ -397,6 +397,81 @@ function getISOWeek(date) {
   return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
 }
 
+/**
+ * GET /api/interviews/stats/progress
+ * Richer time-series data for the dedicated Progress page (Feature 9):
+ * interview score trend, per-skill trend, company/role readiness trend,
+ * and resume ATS score history.
+ */
+async function getProgress(req, res, next) {
+  try {
+    const completed = await Interview.find({
+      user: req.userDoc._id,
+      status: "completed",
+    })
+      .sort({ completedAt: 1 })
+      .select(
+        "type company jobRole completedAt evaluation.overallScore evaluation.technicalScore " +
+          "evaluation.communicationScore evaluation.confidenceScore evaluation.problemSolvingScore " +
+          "evaluation.vocabularyScore evaluation.fluencyScore evaluation.answerQualityScore " +
+          "evaluation.hrScore evaluation.companyReadiness evaluation.roleReadiness",
+      );
+
+    const interviewTrend = completed.map((i) => ({
+      date: i.completedAt,
+      type: i.type,
+      score: i.evaluation?.overallScore ?? null,
+    }));
+
+    const skillProgress = completed.map((i) => ({
+      date: i.completedAt,
+      technical: i.evaluation?.technicalScore ?? null,
+      communication: i.evaluation?.communicationScore ?? null,
+      confidence: i.evaluation?.confidenceScore ?? null,
+      problemSolving: i.evaluation?.problemSolvingScore ?? null,
+      vocabulary: i.evaluation?.vocabularyScore ?? null,
+      fluency: i.evaluation?.fluencyScore ?? null,
+      answerQuality: i.evaluation?.answerQualityScore ?? null,
+      hr: i.evaluation?.hrScore ?? null,
+    }));
+
+    const companyReadinessTrend = completed
+      .filter((i) => i.evaluation?.companyReadiness?.score != null)
+      .map((i) => ({
+        date: i.completedAt,
+        company: i.company,
+        score: i.evaluation.companyReadiness.score,
+      }));
+
+    const roleReadinessTrend = completed
+      .filter((i) => i.evaluation?.roleReadiness?.score != null)
+      .map((i) => ({
+        date: i.completedAt,
+        jobRole: i.jobRole,
+        score: i.evaluation.roleReadiness.score,
+      }));
+
+    const resume = await Resume.findOne({ user: req.userDoc._id }).select(
+      "atsScoreHistory",
+    );
+    const atsProgress = (resume?.atsScoreHistory || []).map((h) => ({
+      date: h.recordedAt,
+      atsScore: h.atsScore,
+      strengthScore: h.strengthScore,
+    }));
+
+    res.json({
+      interviewTrend,
+      skillProgress,
+      companyReadinessTrend,
+      roleReadinessTrend,
+      atsProgress,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   createInterview,
   submitAnswer,
@@ -404,4 +479,5 @@ module.exports = {
   listInterviews,
   getInterview,
   getStats,
+  getProgress,
 };

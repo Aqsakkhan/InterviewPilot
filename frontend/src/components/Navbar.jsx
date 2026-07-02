@@ -4,6 +4,7 @@ import {
   History,
   LogOut,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -46,6 +47,14 @@ export default function Navbar({ onboarding = false }) {
             >
               <Sparkles size={16} />
               New Interview
+            </Link>
+
+            <Link
+              to="/progress"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-muted hover:text-ink hover:bg-white/5 transition-colors"
+            >
+              <TrendingUp size={16} />
+              Progress
             </Link>
 
             <Link

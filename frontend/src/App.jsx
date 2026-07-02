@@ -13,6 +13,7 @@ import InterviewConfig from "./pages/InterviewConfig";
 import InterviewSession from "./pages/InterviewSession";
 import PerformanceReport from "./pages/PerformanceReport";
 import InterviewHistory from "./pages/InterviewHistory";
+import Progress from "./pages/Progress";
 
 export default function App() {
   return (
@@ -83,7 +84,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-
+          <Route
+            path="/progress"
+            element={
+              <ProtectedRoute>
+                <Progress />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/report/:id"
             element={

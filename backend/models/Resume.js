@@ -73,7 +73,14 @@ const analysisSchema = new mongoose.Schema(
   },
   { _id: false },
 );
-
+const atsScoreHistorySchema = new mongoose.Schema(
+  {
+    atsScore: Number,
+    strengthScore: Number,
+    recordedAt: { type: Date, default: Date.now },
+  },
+  { _id: false },
+);
 const resumeSchema = new mongoose.Schema(
   {
     user: {
@@ -101,6 +108,7 @@ const resumeSchema = new mongoose.Schema(
     weakAreas: [String],
 
     analysis: analysisSchema,
+    atsScoreHistory: [atsScoreHistorySchema],
   },
   { timestamps: true },
 );

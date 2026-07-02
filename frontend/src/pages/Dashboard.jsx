@@ -89,8 +89,12 @@ export default function Dashboard() {
 
   // Resume Health: blend of ATS score and resume strength score, when available.
   const resumeHealth =
-    resume && (resume.atsScore != null || resume.strengthScore != null)
-      ? Math.round(((resume.atsScore ?? resume.strengthScore) + (resume.strengthScore ?? resume.atsScore)) / 2)
+    resume?.analysis && (resume.analysis.atsScore != null || resume.analysis.strengthScore != null)
+      ? Math.round(
+        ((resume.analysis.atsScore ?? resume.analysis.strengthScore) +
+          (resume.analysis.strengthScore ?? resume.analysis.atsScore)) /
+        2,
+      )
       : null;
 
   const recommended = stats?.nextRecommendedInterview;

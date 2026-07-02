@@ -7,6 +7,7 @@ const {
   listInterviews,
   getInterview,
   getStats,
+  getProgress,
 } = require("../controllers/interviewController");
 
 const router = express.Router();
@@ -14,6 +15,7 @@ const router = express.Router();
 router.use(requireAuth, requireProfile);
 
 router.get("/stats/summary", getStats);
+router.get("/stats/progress", getProgress);
 router.post("/", createInterview);
 router.get("/", listInterviews);
 router.get("/:id", getInterview);
