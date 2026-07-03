@@ -1,5 +1,26 @@
 const mongoose = require("mongoose");
 
+const preferencesSchema = new mongoose.Schema(
+  {
+    voice: {
+      autoRead: { type: Boolean, default: true },
+      rate: { type: Number, default: 1, min: 0.5, max: 2 },
+      pitch: { type: Number, default: 1, min: 0, max: 2 },
+    },
+    interview: {
+      defaultDifficulty: {
+        type: String,
+        enum: ["beginner", "intermediate", "advanced"],
+        default: "intermediate",
+      },
+      defaultDurationMinutes: { type: Number, default: 20 },
+      defaultCompany: { type: String, default: "" },
+    },
+    reduceMotion: { type: Boolean, default: false },
+  },
+  { _id: false },
+);
+
 const userSchema = new mongoose.Schema(
   {
     firebaseUid: { type: String, required: true, unique: true, index: true },
@@ -24,8 +45,10 @@ const userSchema = new mongoose.Schema(
     },
 
     profileComplete: { type: Boolean, default: false },
+
+    preferences: { type: preferencesSchema, default: () => ({}) },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("User", userSchema);

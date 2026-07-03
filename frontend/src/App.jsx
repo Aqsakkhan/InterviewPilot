@@ -14,6 +14,7 @@ import InterviewSession from "./pages/InterviewSession";
 import PerformanceReport from "./pages/PerformanceReport";
 import InterviewHistory from "./pages/InterviewHistory";
 import Progress from "./pages/Progress";
+import Settings from "./pages/Settings";
 
 export default function App() {
   return (
@@ -84,14 +85,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/progress"
-            element={
-              <ProtectedRoute>
-                <Progress />
-              </ProtectedRoute>
-            }
-          />
+
           <Route
             path="/report/:id"
             element={
@@ -106,6 +100,24 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <InterviewHistory />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/progress"
+            element={
+              <ProtectedRoute>
+                <Progress />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
               </ProtectedRoute>
             }
           />

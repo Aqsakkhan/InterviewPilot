@@ -319,3 +319,14 @@ body {
     transform: translateY(0);
   }
 }
+/* Reduce motion (Settings - Feature 12): turns off non-essential animations */
+.reduce-motion .page-transition {
+  animation: none;
+}
+.reduce-motion .skeleton::after {
+  animation: none;
+}
+.reduce-motion .orb-ring,
+.reduce-motion .orb-core {
+  animation: none !important;
+}

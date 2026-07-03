@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { ArrowRight, Code2, MessageSquare, FolderKanban, BookOpen, Sparkles } from "lucide-react";
 import client from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import GlassCard from "../components/GlassCard";
 import InterviewerOrb from "../components/InterviewerOrb";
 
@@ -64,11 +65,15 @@ const EXPERIENCE_LEVELS = [
 export default function InterviewConfig() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { profile } = useAuth();
+  const interviewPrefs = profile?.preferences?.interview || {};
 
   const [type, setType] = useState(params.get("type") || "full_placement");
-  const [difficulty, setDifficulty] = useState(params.get("difficulty") || "intermediate");
-  const [durationMinutes, setDurationMinutes] = useState(20);
-  const [company, setCompany] = useState("Google");
+  const [difficulty, setDifficulty] = useState(
+    params.get("difficulty") || interviewPrefs.defaultDifficulty || "intermediate",
+  );
+  const [durationMinutes, setDurationMinutes] = useState(interviewPrefs.defaultDurationMinutes || 20);
+  const [company, setCompany] = useState(interviewPrefs.defaultCompany || "Google");
   const [jobRole, setJobRole] = useState("Software Engineer");
   const [experienceLevel, setExperienceLevel] = useState("Fresher");
   const [starting, setStarting] = useState(false);

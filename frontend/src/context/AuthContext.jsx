@@ -43,6 +43,15 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState("");
   const [profileChecked, setProfileChecked] = useState(false);
 
+  // Apply the saved "reduce motion" preference globally, including on
+  // initial load/refresh - not just right after saving in Settings.
+  useEffect(() => {
+    document.documentElement.classList.toggle(
+      "reduce-motion",
+      Boolean(profile?.preferences?.reduceMotion),
+    );
+  }, [profile]);
+
   const syncProfile = useCallback(async () => {
     setProfileChecked(false);
 

@@ -119,9 +119,66 @@ async function updateMe(req, res, next) {
   return saveProfile(req, res, next);
 }
 
+/**
+ * PUT /api/users/preferences
+ * Body: { voice?, interview?, reduceMotion? } - partial updates allowed.
+ * Kept separate from saveProfile since preferences don't require a name
+ * and shouldn't touch profileComplete.
+ */
+async function updatePreferences(req, res, next) {
+  try {
+    if (!req.userDoc) {
+      return res.status(404).json({
+        success: false,
+        message: "Profile not found. Please complete profile setup.",
+      });
+    }
+
+    const { voice, interview, reduceMotion } = req.body || {};
+
+    const update = {};
+    if (voice) {
+      if (voice.autoRead !== undefined)
+        update["preferences.voice.autoRead"] = Boolean(voice.autoRead);
+      if (voice.rate !== undefined)
+        update["preferences.voice.rate"] = Number(voice.rate);
+      if (voice.pitch !== undefined)
+        update["preferences.voice.pitch"] = Number(voice.pitch);
+    }
+    if (interview) {
+      if (interview.defaultDifficulty !== undefined)
+        update["preferences.interview.defaultDifficulty"] =
+          interview.defaultDifficulty;
+      if (interview.defaultDurationMinutes !== undefined)
+        update["preferences.interview.defaultDurationMinutes"] = Number(
+          interview.defaultDurationMinutes,
+        );
+      if (interview.defaultCompany !== undefined)
+        update["preferences.interview.defaultCompany"] =
+          interview.defaultCompany;
+    }
+    if (reduceMotion !== undefined)
+      update["preferences.reduceMotion"] = Boolean(reduceMotion);
+
+    const user = await User.findOneAndUpdate(
+      { firebaseUid: req.firebaseUser.uid },
+      { $set: update },
+      { new: true, runValidators: true },
+    );
+
+    return res.json({
+      success: true,
+      user: serializeUser(user),
+    });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   syncUser,
   createProfile,
   getMe,
   updateMe,
+  updatePreferences,
 };

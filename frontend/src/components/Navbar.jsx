@@ -5,6 +5,7 @@ import {
   LogOut,
   Sparkles,
   TrendingUp,
+  Settings,
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -103,19 +104,18 @@ export default function Navbar({ onboarding = false }) {
                   )[0]?.toUpperCase()}
                 </span>
               </Link>
-
-              <span
-                className="avatar-fallback w-8 h-8 rounded-full bg-surface-2 grid place-items-center text-xs font-semibold"
-                style={{ display: profile?.photoURL ? "none" : "grid" }}
-              >
-                {(
-                  profile?.name ||
-                  profile?.email ||
-                  firebaseUser?.email ||
-                  "?"
-                )[0]?.toUpperCase()}
-              </span>
             </>
+          )}
+
+          {!onboarding && (
+            <Link
+              to="/settings"
+              className="focus-ring p-2 rounded-lg text-muted hover:text-ink hover:bg-white/5 transition-colors"
+              aria-label="Settings"
+              title="Settings"
+            >
+              <Settings size={18} />
+            </Link>
           )}
 
           <button
