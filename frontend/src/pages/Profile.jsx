@@ -9,10 +9,6 @@ import {
     CheckCircle,
     Pencil,
     FileText,
-    UploadCloud,
-    Briefcase,
-    FolderKanban,
-    Brain,
 } from "lucide-react";
 
 export default function Profile() {
@@ -39,21 +35,18 @@ export default function Profile() {
     const navigate = useNavigate();
 
     const [resume, setResume] = useState(null);
+    const [resumeLoading, setResumeLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
     const [displayName, setDisplayName] = useState(name);
     const [saving, setSaving] = useState(false);
     const [saveError, setSaveError] = useState("");
 
-    const displayResumeName =
-        resume?.fileName?.length > 20
-            ? resume.fileName.slice(0, 20) + "..."
-            : resume?.fileName;
-
     useEffect(() => {
         client
             .get("/resume/me")
             .then(({ data }) => setResume(data))
-            .catch(() => setResume(null));
+            .catch(() => setResume(null))
+            .finally(() => setResumeLoading(false));
     }, []);
 
     const handleSaveProfile = async () => {
@@ -175,9 +168,16 @@ export default function Profile() {
 
             {/* Quick Actions */}
             <GlassCard className="p-6">
-                <h2 className="font-display text-xl font-semibold mb-6">
+                <h2 className="font-display text-xl font-semibold mb-1">
                     Account Actions
                 </h2>
+                <p className="text-sm text-muted mb-6">
+                    {resumeLoading
+                        ? "Checking your resume status..."
+                        : resume
+                            ? `Resume on file: ${resume.fileName}`
+                            : "No resume uploaded yet."}
+                </p>
 
                 <div className="flex flex-wrap gap-4">
                     <button
@@ -193,76 +193,14 @@ export default function Profile() {
                     </button>
 
                     <button
-                        onClick={() => navigate("/resume-upload")}
+                        onClick={() => navigate(resume ? "/resume-report" : "/resume-upload")}
                         className="flex items-center gap-2 px-5 py-3 rounded-xl border border-line bg-surface-2 hover:bg-white/5 transition-colors"
                     >
                         <FileText size={18} />
-                        Resume Center
+                        {resume ? "View Resume Report" : "Upload Resume"}
                     </button>
-
                 </div>
-            </GlassCard >
-
-
-            {/* Resume */}
-            <GlassCard GlassCard className="p-6" >
-                <h2 className="font-display text-xl font-semibold mb-6">
-                    Resume
-                </h2>
-
-                {
-                    resume ? (
-                        <>
-                            <div className="space-y-5">
-
-                                <div className="flex items-center gap-3">
-                                    <FileText className="text-accent" size={20} />
-
-                                    <div>
-                                        <p className="text-xs uppercase tracking-wide text-muted">
-                                            Resume File
-                                        </p>
-
-                                        <p className="font-medium">
-                                            {displayResumeName}
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex justify-between items-center border-t border-line pt-5">
-
-                                    <span className="inline-flex px-3 py-1 rounded-full bg-green-500/10 text-green-400 text-sm">
-                                        ✓ Ready for AI Interviews
-                                    </span>
-
-
-                                </div>
-
-                            </div>
-                        </>
-                    ) : (
-                        <div className="text-center py-10">
-
-                            <UploadCloud
-                                className="mx-auto mb-4 text-muted"
-                                size={42}
-                            />
-
-                            <p className="text-muted mb-5">
-                                Upload your resume to unlock AI-powered interviews.
-                            </p>
-
-                            <button
-                                onClick={() => navigate("/resume-upload")}
-                                className="focus-ring px-5 py-2 rounded-lg bg-primary text-white hover:bg-primary-dim transition-colors"
-                            >
-                                Upload Resume
-                            </button>
-
-                        </div>
-                    )
-                }
-            </GlassCard >
+            </GlassCard>
 
             {showEditModal && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
@@ -317,6 +255,6 @@ export default function Profile() {
                 </div>
             )}
 
-        </div >
+        </div>
     );
 }

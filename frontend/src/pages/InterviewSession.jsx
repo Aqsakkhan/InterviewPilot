@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Mic, Square, Send, Volume2, VolumeX, RotateCcw } from "lucide-react";
 import client from "../api/client";
+import { useAuth } from "../context/AuthContext";
 import GlassCard from "../components/GlassCard";
 import InterviewerOrb from "../components/InterviewerOrb";
 import InterviewContextBar from "../components/InterviewContextBar";
@@ -25,12 +26,20 @@ function formatTimer(totalSeconds) {
 export default function InterviewSession() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { profile } = useAuth();
+
+  const voicePrefs = {
+    autoRead: profile?.preferences?.voice?.autoRead ?? true,
+    rate: profile?.preferences?.voice?.rate ?? 1,
+    pitch: profile?.preferences?.voice?.pitch ?? 1,
+  };
 
   const [interview, setInterview] = useState(null);
   const [answerText, setAnswerText] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
 
   const speechRec = useSpeechRecognition();
   const speechSyn = useSpeechSynthesis();
@@ -55,13 +64,14 @@ export default function InterviewSession() {
 
   const currentQuestion = interview?.qa?.[interview.currentIndex];
 
-  // Speak each new question once, automatically.
+  // Speak each new question once, automatically - unless the candidate
+  // has turned off auto-read in Settings.
   useEffect(() => {
-    if (!currentQuestion) return;
+    if (!currentQuestion || !voicePrefs.autoRead) return;
     const key = `${interview._id}-${interview.currentIndex}`;
     if (hasAutoSpokenRef.current === key) return;
     hasAutoSpokenRef.current = key;
-    speechSyn.speak(currentQuestion.question);
+    speechSyn.speak(currentQuestion.question, { rate: voicePrefs.rate, pitch: voicePrefs.pitch });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentQuestion]);
 
@@ -107,8 +117,10 @@ export default function InterviewSession() {
     setAnswerText("");
   };
 
-  const endEarly = async () => {
-    if (!window.confirm("End this interview now and get your report?")) return;
+  const endEarly = () => setShowEndConfirm(true);
+
+  const confirmEndEarly = async () => {
+    setShowEndConfirm(false);
     setSubmitting(true);
     try {
       await client.post(`/interviews/${id}/complete`);
@@ -200,7 +212,7 @@ export default function InterviewSession() {
             </button>
           ) : (
             <button
-              onClick={() => speechSyn.speak(currentQuestion.question)}
+              onClick={() => speechSyn.speak(currentQuestion.question, { rate: voicePrefs.rate, pitch: voicePrefs.pitch })}
               className="focus-ring p-2 rounded-lg text-muted hover:text-accent hover:bg-white/5 transition-colors shrink-0"
               title="Replay question"
             >
@@ -271,6 +283,32 @@ export default function InterviewSession() {
               </GlassCard>
             ))}
           </div>
+        </div>
+      )}
+
+      {showEndConfirm && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <GlassCard className="w-full max-w-sm p-6">
+            <h2 className="text-lg font-semibold mb-2">End this interview?</h2>
+            <p className="text-sm text-muted mb-6">
+              You'll get your performance report based on the {interview.qa.length} question
+              {interview.qa.length === 1 ? "" : "s"} answered so far. This can't be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowEndConfirm(false)}
+                className="px-4 py-2 rounded-lg border border-line text-ink hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmEndEarly}
+                className="px-5 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+              >
+                End interview
+              </button>
+            </div>
+          </GlassCard>
         </div>
       )}
     </div>
