@@ -1,4 +1,7 @@
 const User = require("../models/User");
+const Resume = require("../models/Resume");
+const Interview = require("../models/Interview");
+const { initFirebaseAdmin } = require("../config/firebaseAdmin");
 
 function serializeUser(user) {
   return user ? user.toObject?.() || user : null;
@@ -26,17 +29,28 @@ async function saveProfile(req, res, next) {
       });
     }
 
+    const { college, branch, graduationYear, targetRole } = req.body;
+
+    const setFields = {
+      firebaseUid: req.firebaseUser.uid,
+      email: req.firebaseUser.email,
+      name,
+      photoURL: req.firebaseUser.picture || "",
+      profileComplete: true,
+    };
+
+    // These are optional and weren't collected during onboarding, so only
+    // set them when explicitly provided (e.g. from the Profile edit form).
+    if (typeof college === "string") setFields.college = college.trim();
+    if (typeof branch === "string") setFields.branch = branch.trim();
+    if (graduationYear !== undefined && graduationYear !== "") {
+      setFields.graduationYear = Number(graduationYear);
+    }
+    if (typeof targetRole === "string") setFields.targetRole = targetRole;
+
     const user = await User.findOneAndUpdate(
       { firebaseUid: req.firebaseUser.uid },
-      {
-        $set: {
-          firebaseUid: req.firebaseUser.uid,
-          email: req.firebaseUser.email,
-          name,
-          photoURL: req.firebaseUser.picture || "",
-          profileComplete: true,
-        },
-      },
+      { $set: setFields },
       {
         new: true,
         upsert: true,
@@ -175,10 +189,44 @@ async function updatePreferences(req, res, next) {
   }
 }
 
+/**
+ * DELETE /api/users/me
+ * Permanently deletes the account: resume, all interviews, the Mongo
+ * profile, and the underlying Firebase Auth user itself (so the person
+ * can't just log back in and get a fresh profile auto-created).
+ */
+async function deleteAccount(req, res, next) {
+  try {
+    const userId = req.userDoc?._id;
+
+    if (userId) {
+      await Promise.all([
+        Resume.deleteOne({ user: userId }),
+        Interview.deleteMany({ user: userId }),
+        User.deleteOne({ _id: userId }),
+      ]);
+    }
+
+    try {
+      const fbAdmin = initFirebaseAdmin();
+      if (fbAdmin) await fbAdmin.auth().deleteUser(req.firebaseUser.uid);
+    } catch (fbErr) {
+      // Mongo data is already gone at this point - log but don't fail the
+      // request just because the Firebase-side cleanup hit an issue.
+      console.error("Failed to delete Firebase auth user:", fbErr.message);
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+}
+
 module.exports = {
   syncUser,
   createProfile,
   getMe,
   updateMe,
   updatePreferences,
+  deleteAccount,
 };
