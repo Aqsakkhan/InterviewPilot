@@ -37,11 +37,7 @@ export default function ProtectedRoute({
       <Navbar onboarding={!profileComplete} />
 
       <main
-        className={
-          requireProfile
-            ? "max-w-6xl mx-auto px-6 py-10"
-            : ""
-        }
+        className={`page-transition ${requireProfile ? "max-w-6xl mx-auto px-6 py-10" : ""}`}
       >
         {children}
       </main>

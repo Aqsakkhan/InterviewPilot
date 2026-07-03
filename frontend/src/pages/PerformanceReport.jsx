@@ -17,6 +17,8 @@ import client from "../api/client";
 import GlassCard from "../components/GlassCard";
 import ScoreRing from "../components/ScoreRing";
 import LearningRecommendations from "../components/LearningRecommendations";
+import Skeleton from "../components/Skeleton";
+import ErrorState from "../components/ErrorState";
 
 const CORE_SCORES = [
   { key: "technicalScore", label: "Technical" },
@@ -35,11 +37,21 @@ const SECONDARY_SCORES = [
 export default function PerformanceReport() {
   const { id } = useParams();
   const [interview, setInterview] = useState(null);
+  const [loadError, setLoadError] = useState("");
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [pdfError, setPdfError] = useState("");
 
+  const fetchInterview = () => {
+    setLoadError("");
+    client
+      .get(`/interviews/${id}`)
+      .then(({ data }) => setInterview(data))
+      .catch(() => setLoadError("Couldn't load this report."));
+  };
+
   useEffect(() => {
-    client.get(`/interviews/${id}`).then(({ data }) => setInterview(data));
+    fetchInterview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleDownloadPdf = async () => {
@@ -64,8 +76,26 @@ export default function PerformanceReport() {
     }
   };
 
+  if (loadError) {
+    return <ErrorState message={loadError} onRetry={fetchInterview} />;
+  }
+
   if (!interview) {
-    return <p className="text-muted">Loading your report...</p>;
+    return (
+      <div className="max-w-3xl mx-auto space-y-8">
+        <div>
+          <Skeleton className="h-4 w-40 mb-2" />
+          <Skeleton className="h-8 w-72" />
+        </div>
+        <Skeleton className="h-44" />
+        <Skeleton className="h-28" />
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Skeleton className="h-24" />
+          <Skeleton className="h-24" />
+        </div>
+        <Skeleton className="h-32" />
+      </div>
+    );
   }
 
   const evalData = interview.evaluation || {};

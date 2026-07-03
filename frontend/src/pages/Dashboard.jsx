@@ -19,6 +19,8 @@ import { useAuth } from "../context/AuthContext";
 import client from "../api/client";
 import GlassCard from "../components/GlassCard";
 import ScoreRing from "../components/ScoreRing";
+import Skeleton from "../components/Skeleton";
+import ErrorState from "../components/ErrorState";
 
 const QUICK_ACTIONS = [
   { type: "full_placement", label: "Start Mock Interview", icon: Sparkles, tone: "from-primary to-secondary" },
@@ -45,10 +47,19 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [resume, setResume] = useState(null);
   const [hasResume, setHasResume] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsError, setStatsError] = useState("");
   const navigate = useNavigate();
 
-  useEffect(() => {
-    client.get("/interviews/stats/summary").then(({ data }) => setStats(data));
+  const fetchDashboardData = () => {
+    setStatsLoading(true);
+    setStatsError("");
+    client
+      .get("/interviews/stats/summary")
+      .then(({ data }) => setStats(data))
+      .catch(() => setStatsError("Couldn't load your dashboard stats."))
+      .finally(() => setStatsLoading(false));
+
     client
       .get("/resume/me")
       .then(({ data }) => {
@@ -59,6 +70,11 @@ export default function Dashboard() {
         setResume(null);
         setHasResume(false);
       });
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const firstName = profile?.name?.split(" ")[0] || "";
@@ -83,6 +99,32 @@ export default function Dashboard() {
 
   if (profile && !profile.profileComplete) {
     return <Navigate to="/profile-setup" replace />;
+  }
+
+  if (statsLoading) {
+    return (
+      <div className="space-y-10">
+        <div>
+          <Skeleton className="h-8 w-64 mb-2" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-24" />
+          ))}
+        </div>
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28" />
+          ))}
+        </div>
+        <Skeleton className="h-40" />
+      </div>
+    );
+  }
+
+  if (statsError) {
+    return <ErrorState message={statsError} onRetry={fetchDashboardData} />;
   }
 
   const chartData = (stats?.weeklyProgress || []).map((w) => ({ name: w.week.split("-W")[1] ? `W${w.week.split("-W")[1]}` : w.week, score: w.avgScore }));

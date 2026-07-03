@@ -12,6 +12,8 @@ import {
 import { TrendingUp, Radar, FileText, Target } from "lucide-react";
 import client from "../api/client";
 import GlassCard from "../components/GlassCard";
+import Skeleton from "../components/Skeleton";
+import ErrorState from "../components/ErrorState";
 
 const CHART_COLORS = {
     primary: "#3d6bff",
@@ -39,12 +41,20 @@ function EmptyChart({ message }) {
 export default function Progress() {
     const [progress, setProgress] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const fetchProgress = () => {
+        setLoading(true);
+        setError("");
+        client
+            .get("/interviews/stats/progress")
+            .then(({ data }) => setProgress(data))
+            .catch(() => setError("Couldn't load your progress data."))
+            .finally(() => setLoading(false));
+    };
 
     useEffect(() => {
-        client.get("/interviews/stats/progress").then(({ data }) => {
-            setProgress(data);
-            setLoading(false);
-        });
+        fetchProgress();
     }, []);
 
     const interviewTrendData = useMemo(
@@ -93,7 +103,26 @@ export default function Progress() {
         return Array.from(map.values());
     }, [progress]);
 
-    if (loading) return <p className="text-muted">Loading your progress...</p>;
+    if (error) {
+        return <ErrorState message={error} onRetry={fetchProgress} />;
+    }
+
+    if (loading) {
+        return (
+            <div className="max-w-4xl mx-auto space-y-8">
+                <div>
+                    <Skeleton className="h-8 w-56 mb-2" />
+                    <Skeleton className="h-4 w-72" />
+                </div>
+                <Skeleton className="h-56" />
+                <Skeleton className="h-56" />
+                <div className="grid sm:grid-cols-2 gap-4">
+                    <Skeleton className="h-48" />
+                    <Skeleton className="h-48" />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-8">

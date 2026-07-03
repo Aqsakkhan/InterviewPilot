@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { ArrowUpRight } from "lucide-react";
 import client from "../api/client";
 import GlassCard from "../components/GlassCard";
+import Skeleton from "../components/Skeleton";
+import ErrorState from "../components/ErrorState";
 
 function formatDate(d) {
   return new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
@@ -27,15 +29,38 @@ const TYPE_LABEL = {
 export default function InterviewHistory() {
   const [interviews, setInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const fetchHistory = () => {
+    setLoading(true);
+    setError("");
+    client
+      .get("/interviews")
+      .then(({ data }) => setInterviews(data))
+      .catch(() => setError("Couldn't load your interview history."))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    client.get("/interviews").then(({ data }) => {
-      setInterviews(data);
-      setLoading(false);
-    });
+    fetchHistory();
   }, []);
 
-  if (loading) return <p className="text-muted">Loading history...</p>;
+  if (loading) {
+    return (
+      <div>
+        <h1 className="font-display text-2xl font-semibold mb-6">Interview history</h1>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-20" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorState message={error} onRetry={fetchHistory} />;
+  }
 
   if (!interviews.length) {
     return (

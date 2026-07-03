@@ -228,8 +228,8 @@ export default function InterviewSession() {
               <button
                 onClick={toggleMic}
                 className={`focus-ring flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${speechRec.isListening
-                    ? "border-accent text-accent bg-accent/10"
-                    : "border-line text-muted hover:bg-white/5"
+                  ? "border-accent text-accent bg-accent/10"
+                  : "border-line text-muted hover:bg-white/5"
                   }`}
               >
                 {speechRec.isListening ? <Square size={12} /> : <Mic size={12} />}
