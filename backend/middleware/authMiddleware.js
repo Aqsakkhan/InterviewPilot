@@ -27,7 +27,14 @@ async function requireAuth(req, res, next) {
       });
     }
 
-    const decoded = await fbAdmin.auth().verifyIdToken(token, true);
+    // Note: not passing checkRevoked (true) here. That flag makes Firebase
+    // Admin sign an extra OAuth request using the service account's private
+    // key to check revocation in real time - which is where the recurring
+    // "secretOrPrivateKey must be an asymmetric key" errors came from on
+    // hosts where the multi-line key gets mangled on paste. A normal
+    // verifyIdToken() still fully validates signature + expiry using
+    // Google's public certs, just without the instant-revocation check.
+    const decoded = await fbAdmin.auth().verifyIdToken(token);
 
     if (!decoded?.uid) {
       return res.status(401).json({
