@@ -10,6 +10,7 @@ const {
   getProgress,
   downloadInterviewReportPdf,
 } = require("../controllers/interviewController");
+const { interviewActionLimiter } = require("../middleware/rateLimitMiddleware");
 
 const router = express.Router();
 
@@ -17,11 +18,11 @@ router.use(requireAuth, requireProfile);
 
 router.get("/stats/summary", getStats);
 router.get("/stats/progress", getProgress);
-router.post("/", createInterview);
+router.post("/", interviewActionLimiter, createInterview);
 router.get("/", listInterviews);
 router.get("/:id", getInterview);
 router.get("/:id/report/pdf", downloadInterviewReportPdf);
-router.post("/:id/answer", submitAnswer);
-router.post("/:id/complete", completeInterview);
+router.post("/:id/answer", interviewActionLimiter, submitAnswer);
+router.post("/:id/complete", interviewActionLimiter, completeInterview);
 
 module.exports = router;

@@ -83,7 +83,7 @@ export default function InterviewHistory() {
       <div className="space-y-3">
         {interviews.map((iv) => (
           <Link key={iv._id} to={iv.status === "completed" ? `/report/${iv._id}` : `/interview/${iv._id}`}>
-            <GlassCard className="p-5 flex items-center justify-between hover:bg-white/[0.06] transition-colors">
+            <GlassCard className="p-5 flex items-center justify-between hover:bg-white/6 transition-colors">
               <div className="min-w-0">
                 <p className="font-medium">{TYPE_LABEL[iv.type] || iv.type}</p>
                 {(iv.company || iv.jobRole) && (

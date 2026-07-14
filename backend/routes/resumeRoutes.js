@@ -13,6 +13,7 @@ const express = require("express");
 const multer = require("multer");
 
 const { requireAuth, requireProfile } = require("../middleware/authMiddleware");
+const { resumeAnalysisLimiter } = require("../middleware/rateLimitMiddleware");
 const {
   downloadResumeAnalysisPdf,
   getMyResume,
@@ -43,13 +44,20 @@ router.post(
   "/upload",
   requireAuth,
   requireProfile,
+  resumeAnalysisLimiter,
   upload.single("resume"),
   uploadResume,
 );
 
 router.get("/me", requireAuth, requireProfile, getMyResume);
 
-router.post("/analyze", requireAuth, requireProfile, reanalyzeResume);
+router.post(
+  "/analyze",
+  requireAuth,
+  requireProfile,
+  resumeAnalysisLimiter,
+  reanalyzeResume,
+);
 
 router.get(
   "/analysis/pdf",
