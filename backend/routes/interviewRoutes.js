@@ -6,10 +6,12 @@ const {
   completeInterview,
   listInterviews,
   getInterview,
-  getStats,
-  getProgress,
   downloadInterviewReportPdf,
 } = require("../controllers/interviewController");
+const {
+  getStats,
+  getProgress,
+} = require("../controllers/interviewStatsController");
 const { interviewActionLimiter } = require("../middleware/rateLimitMiddleware");
 
 const router = express.Router();
